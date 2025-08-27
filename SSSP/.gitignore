@@ -1,0 +1,23 @@
+# Build artifacts
+/out/
+/build/
+/CMakeFiles/
+CMakeCache.txt
+*.obj
+*.o
+*.a
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.dll
+*.so
+*.dylib
+
+# IDEs
+.vscode/
+.idea/
+.vs/
+
+# Tools
+compile_commands.json
