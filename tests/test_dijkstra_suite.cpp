@@ -5,10 +5,18 @@
 #include <limits>
 #include <cmath>
 #include <vector>
+#include <algorithm>
+
 
 using namespace lemon;
 
-static bool eq(double a, double b, double eps = 1e-9) {
+namespace {
+    constexpr double kEps = 1e-9;  // tolerance for NEAR checks
+    constexpr double kTiny = 1e-9;  // tiny weight used in precision test
+    constexpr double kTwoTiny = 2e-9;  // sum of two tiny weights
+}
+
+static bool eq(double a, double b, double eps = kEps) {
     if (std::isinf(a) || std::isinf(b)) return std::isinf(a) && std::isinf(b);
     return std::fabs(a - b) <= eps * std::max(1.0, std::max(std::fabs(a), std::fabs(b)));
 }
@@ -21,7 +29,7 @@ TEST(DijkstraSuite, SingleNodeOnly) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_DOUBLE_EQ(d.dist(s), 0.0);
+    ASSERT_DOUBLE_EQ(d.dist(s), 0.0);
 }
 
 TEST(DijkstraSuite, TwoNodesOneEdge) {
@@ -36,8 +44,8 @@ TEST(DijkstraSuite, TwoNodesOneEdge) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_DOUBLE_EQ(d.dist(s), 0.0);
-    EXPECT_NEAR(d.dist(t), 4.0, 1e-9);
+    ASSERT_DOUBLE_EQ(d.dist(s), 0.0);
+    ASSERT_NEAR(d.dist(t), 4.0, kEps);
 }
 
 TEST(DijkstraSuite, ParallelEdgesKeepCheapest) {
@@ -54,7 +62,7 @@ TEST(DijkstraSuite, ParallelEdgesKeepCheapest) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_NEAR(d.dist(t), 2.5, 1e-9);
+    ASSERT_NEAR(d.dist(t), 2.5, kEps);
 }
 
 TEST(DijkstraSuite, SelfLoopDoesNotHelp) {
@@ -71,8 +79,8 @@ TEST(DijkstraSuite, SelfLoopDoesNotHelp) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_DOUBLE_EQ(d.dist(s), 0.0);
-    EXPECT_NEAR(d.dist(a), 3.0, 1e-9); // self-loop should not reduce distance to 'a'
+    ASSERT_DOUBLE_EQ(d.dist(s), 0.0);
+    ASSERT_NEAR(d.dist(a), 3.0, kEps); // self-loop should not reduce distance to 'a'
 }
 
 TEST(DijkstraSuite, ZeroWeightsAndTies) {
@@ -93,8 +101,8 @@ TEST(DijkstraSuite, ZeroWeightsAndTies) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_NEAR(d.dist(a), 0.0, 1e-12);
-    EXPECT_NEAR(d.dist(b), 0.0, 1e-12); // path s->a->b with total 0
+    ASSERT_NEAR(d.dist(a), 0.0, kEps);
+    ASSERT_NEAR(d.dist(b), 0.0, kEps); // path s->a->b with total 0
 }
 
 TEST(DijkstraSuite, SmallCycle) {
@@ -115,8 +123,8 @@ TEST(DijkstraSuite, SmallCycle) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(n0);
 
-    EXPECT_NEAR(d.dist(n1), 2.0, 1e-9);
-    EXPECT_NEAR(d.dist(n2), 4.0, 1e-9); // 0->1->2 is cheaper than 0->2 direct
+    ASSERT_NEAR(d.dist(n1), 2.0, kEps);
+    ASSERT_NEAR(d.dist(n2), 4.0, kEps); // 0->1->2 is cheaper than 0->2 direct
 }
 
 TEST(DijkstraSuite, DisconnectedComponent) {
@@ -136,10 +144,10 @@ TEST(DijkstraSuite, DisconnectedComponent) {
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_DOUBLE_EQ(d.dist(s), 0.0);
-    EXPECT_NEAR(d.dist(a), 2.0, 1e-9);
-    EXPECT_FALSE(d.reached(x));
-    EXPECT_FALSE(d.reached(y));
+    ASSERT_DOUBLE_EQ(d.dist(s), 0.0);
+    ASSERT_NEAR(d.dist(a), 2.0, kEps);
+    ASSERT_FALSE(d.reached(x));
+    ASSERT_FALSE(d.reached(y));
 }
 
 TEST(DijkstraSuite, PathReconstructionWithPredMap) {
@@ -156,7 +164,7 @@ TEST(DijkstraSuite, PathReconstructionWithPredMap) {
     ListDigraph::ArcMap<double> w(g);
     w[sa] = 1.0; w[ab] = 1.0; w[sb] = 3.5;
 
-    // IMPORTANT: predecessor map is NodeMap<Arc>
+    // predecessor map must be NodeMap<Arc>
     ListDigraph::NodeMap<ListDigraph::Arc> predMap(g);
 
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
@@ -171,12 +179,11 @@ TEST(DijkstraSuite, PathReconstructionWithPredMap) {
         ASSERT_NE(p, INVALID) << "No predecessor for a non-source node";
         v = g.source(p);
     }
-    // path should be [b, a, s]
     ASSERT_EQ(path.size(), 3u);
-    EXPECT_EQ(path[0], b);
-    EXPECT_EQ(path[1], a);
-    EXPECT_EQ(path[2], s);
-    EXPECT_NEAR(d.dist(b), 2.0, 1e-9);
+    ASSERT_EQ(path[0], b);
+    ASSERT_EQ(path[1], a);
+    ASSERT_EQ(path[2], s);
+    ASSERT_NEAR(d.dist(b), 2.0, kEps);
 }
 
 TEST(DijkstraSuite, FloatingWeightsPrecision) {
@@ -189,11 +196,11 @@ TEST(DijkstraSuite, FloatingWeightsPrecision) {
     auto ab = g.addArc(a, b);
 
     ListDigraph::ArcMap<double> w(g);
-    w[sa] = 1e-9;
-    w[ab] = 1e-9;
+    w[sa] = kTiny;
+    w[ab] = kTiny;
 
     Dijkstra<ListDigraph, ListDigraph::ArcMap<double>> d(g, w);
     d.run(s);
 
-    EXPECT_TRUE(eq(d.dist(b), 2e-9)); // tolerant comparison
+    ASSERT_TRUE(eq(d.dist(b), kTwoTiny)); // tolerant comparison
 }
