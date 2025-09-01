@@ -22,16 +22,17 @@ namespace rbconv {
 
     class RBToLemonConverter {
     private:
-        lemon::ListGraph graph;
-        lemon::ListGraph::NodeMap<int>    nodeIds;
-        lemon::ListGraph::EdgeMap<double> weights;
+        // ==== שינוי: גרף מכוון ====
+        lemon::ListDigraph graph;
+        lemon::ListDigraph::NodeMap<int>   nodeIds;
+        lemon::ListDigraph::ArcMap<double> weights;
 
     public:
         RBToLemonConverter();
 
         bool readRutherfordBoeing(const std::string& filename);
-        void saveToLemonFormat(const std::string& filename);
-        void saveToGraphML(const std::string& filename);
+        void saveToLemonFormat(const std::string& filename); // ייכתב כ-@arcs
+        void saveToGraphML(const std::string& filename);     // directed
         void printGraphStats();
 
     private:
