@@ -61,12 +61,12 @@ bool RBToLemonConverter::readHeader(std::ifstream& file, RBHeader& h) {
 }
 
 bool RBToLemonConverter::convertMatrixToGraph(std::ifstream& file, const RBHeader& h) {
-    // Create nodes
-    std::vector<lemon::ListGraph::Node> nodes;
+    // ==== יצירת צמתים ====
+    std::vector<lemon::ListDigraph::Node> nodes;
     int maxDim = std::max(h.nrow, h.ncol);
     nodes.reserve(maxDim);
     for (int i = 0; i < maxDim; ++i) {
-        lemon::ListGraph::Node n = graph.addNode();
+        lemon::ListDigraph::Node n = graph.addNode();
         nodeIds[n] = i;
         nodes.push_back(n);
     }
@@ -95,17 +95,20 @@ bool RBToLemonConverter::convertMatrixToGraph(std::ifstream& file, const RBHeade
         val.assign(h.nnzero, 1.0);
     }
 
-    // Build edges
+    // ==== בניית קשתות מכוונות: row -> col ====
     for (int col = 0; col < h.ncol; ++col) {
         for (int idx = colPtr[col]; idx < colPtr[col + 1]; ++idx) {
             int row = rowInd[idx];
             double w = val[idx];
 
-            if (std::abs(w) > 1e-12) {
-                if (row < (int)nodes.size() && col < (int)nodes.size()) {
-                    auto e = graph.addEdge(nodes[row], nodes[col]);
-                    weights[e] = w;
-                }
+            // סינונים: אין לולאות עצמיות / אין שלילי / אין אפס
+            if (row == col) continue;
+            if (w < 0)     continue;
+            if (std::abs(w) <= 1e-12) continue;
+
+            if (row < (int)nodes.size() && col < (int)nodes.size()) {
+                auto a = graph.addArc(nodes[row], nodes[col]); // directed
+                weights[a] = w;
             }
         }
     }
@@ -119,26 +122,26 @@ void RBToLemonConverter::saveToLemonFormat(const std::string& fn) {
         return;
     }
 
-    f << "# LEMON Graph Format\n";
+    f << "# LEMON Digraph Format\n";
     f << "# Converted from Rutherford-Boeing format\n\n";
 
     f << "@nodes\n";
     f << "label\tid\n";
-    for (lemon::ListGraph::NodeIt n(graph); n != lemon::INVALID; ++n)
+    for (lemon::ListDigraph::NodeIt n(graph); n != lemon::INVALID; ++n)
         f << nodeIds[n] << "\t" << nodeIds[n] << "\n";
     f << "\n";
 
-    f << "@edges\n";
+    f << "@arcs\n"; // <<<<<< מכוון
     f << "\t\tlabel\tweight\n";
-    int eid = 0;
-    for (lemon::ListGraph::EdgeIt e(graph); e != lemon::INVALID; ++e) {
-        auto u = graph.u(e), v = graph.v(e);
-        f << nodeIds[u] << "\t" << nodeIds[v] << "\t" << eid++ << "\t" << weights[e] << "\n";
+    int aid = 0;
+    for (lemon::ListDigraph::ArcIt a(graph); a != lemon::INVALID; ++a) {
+        auto u = graph.source(a), v = graph.target(a);
+        f << nodeIds[u] << "\t" << nodeIds[v] << "\t" << aid++ << "\t" << weights[a] << "\n";
     }
 
-    std::cout << "Graph saved to " << fn << std::endl;
+    std::cout << "Digraph saved to " << fn << std::endl;
     std::cout << "Nodes: " << lemon::countNodes(graph) << std::endl;
-    std::cout << "Edges: " << lemon::countEdges(graph) << std::endl;
+    std::cout << "Arcs: " << lemon::countArcs(graph) << std::endl;
 }
 
 void RBToLemonConverter::saveToGraphML(const std::string& fn) {
@@ -154,38 +157,38 @@ void RBToLemonConverter::saveToGraphML(const std::string& fn) {
     f << "         xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns "
         "http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n";
     f << "  <key id=\"weight\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\"/>\n";
-    f << "  <graph id=\"G\" edgedefault=\"undirected\">\n";
+    f << "  <graph id=\"G\" edgedefault=\"directed\">\n"; // <<<<<< מכוון
 
-    for (lemon::ListGraph::NodeIt n(graph); n != lemon::INVALID; ++n)
+    for (lemon::ListDigraph::NodeIt n(graph); n != lemon::INVALID; ++n)
         f << "    <node id=\"n" << nodeIds[n] << "\"/>\n";
 
-    for (lemon::ListGraph::EdgeIt e(graph); e != lemon::INVALID; ++e) {
-        auto u = graph.u(e), v = graph.v(e);
+    for (lemon::ListDigraph::ArcIt a(graph); a != lemon::INVALID; ++a) {
+        auto u = graph.source(a), v = graph.target(a);
         f << "    <edge source=\"n" << nodeIds[u] << "\" target=\"n" << nodeIds[v] << "\">\n";
-        f << "      <data key=\"weight\">" << weights[e] << "</data>\n";
+        f << "      <data key=\"weight\">" << weights[a] << "</data>\n";
         f << "    </edge>\n";
     }
 
     f << "  </graph>\n</graphml>\n";
 
-    std::cout << "Graph saved to GraphML format: " << fn << std::endl;
+    std::cout << "GraphML (directed) saved to: " << fn << std::endl;
 }
 
 void RBToLemonConverter::printGraphStats() {
-    std::cout << "\nGraph Statistics:\n";
+    std::cout << "\nGraph Statistics (directed):\n";
     std::cout << "Nodes: " << lemon::countNodes(graph) << "\n";
-    std::cout << "Edges: " << lemon::countEdges(graph) << "\n";
+    std::cout << "Arcs:  " << lemon::countArcs(graph) << "\n";
 
-    std::vector<int> deg;
-    for (lemon::ListGraph::NodeIt n(graph); n != lemon::INVALID; ++n)
-        deg.push_back(lemon::countIncEdges(graph, n));
+    std::vector<int> outdeg;
+    for (lemon::ListDigraph::NodeIt n(graph); n != lemon::INVALID; ++n)
+        outdeg.push_back(lemon::countOutArcs(graph, n));
 
-    if (!deg.empty()) {
-        int mn = *std::min_element(deg.begin(), deg.end());
-        int mx = *std::max_element(deg.begin(), deg.end());
-        double avg = std::accumulate(deg.begin(), deg.end(), 0.0) / deg.size();
-        std::cout << "Min degree: " << mn << "\n"
-            << "Max degree: " << mx << "\n"
-            << "Average degree: " << avg << "\n";
+    if (!outdeg.empty()) {
+        int mn = *std::min_element(outdeg.begin(), outdeg.end());
+        int mx = *std::max_element(outdeg.begin(), outdeg.end());
+        double avg = std::accumulate(outdeg.begin(), outdeg.end(), 0.0) / outdeg.size();
+        std::cout << "Min out-degree: " << mn << "\n"
+            << "Max out-degree: " << mx << "\n"
+            << "Average out-degree: " << avg << "\n";
     }
 }

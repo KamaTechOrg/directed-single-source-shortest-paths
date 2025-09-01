@@ -1,4 +1,4 @@
-# LEMON Graph Format
+# LEMON Digraph Format
 # Converted from Rutherford-Boeing format
 
 @nodes
@@ -9,14 +9,11 @@ label	id
 1	1
 0	0
 
-@edges
+@arcs
 		label	weight
 4	2	0	4
 4	1	1	7
-3	3	2	4
-3	0	3	1
-2	3	4	8
-2	2	5	2
-1	2	6	3
-0	1	7	3
-0	0	8	2
+3	0	2	1
+2	3	3	8
+1	2	4	3
+0	1	5	3
