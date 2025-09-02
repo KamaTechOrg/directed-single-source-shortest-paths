@@ -1,11 +1,20 @@
+// src/preview_from_lgf.cpp  (את יכולה לשנות לשם אחר כרצונך)
+
 #include <iostream>
 #include <string>
+#include <vector>      // std::vector
+#include <utility>     // std::pair
 #include <algorithm>   // std::min
 #include <fstream>     // std::ifstream
-#include "io/sssp_lgf_io.hpp"
 
-static void print_summary(const std::vector<std::vector<std::pair<int, double>>>& adj,
-    int preview_nodes = 5, int preview_edges_per_node = 5)
+#include "lgf_to_adj.hpp"
+
+// טיפוס עזר לקריאות
+using Adj = std::vector<std::vector<std::pair<int, double>>>;
+
+static void print_summary(const Adj& adj,
+    int preview_nodes = 5,
+    int preview_edges_per_node = 5)
 {
     const int n = static_cast<int>(adj.size());
     long long m = 0;
@@ -29,11 +38,12 @@ static void print_summary(const std::vector<std::vector<std::pair<int, double>>>
     }
 }
 
-int main() {
-    // נתיב קשיח לקובץ ה-LGF שלך (עדכני אם צריך)
+int main()
+{
+    // נתיב קשיח לקובץ ה-LGF שלך (עדכני לפי המחשב שלך)
     std::string lgf = R"(C:\Users\user1\Desktop\directed-single-source-shortest-paths\data\converted_graph.lgf)";
 
-    // בדיקת קיום בלי <filesystem>
+    // בדיקה מהירה שהקובץ קיים
     std::ifstream fin(lgf);
     if (!fin.good()) {
         std::cerr << "LGF not found or cannot be opened: " << lgf << "\n";
@@ -41,7 +51,10 @@ int main() {
     }
 
     try {
-        auto adj = loadAdjFromDirectedLGF(lgf, /*skipNeg=*/true);
+        // שימי לב: אם בהדר שלך הפונקציה נקראת אחרת (למשל read_lgf_as_adj),
+        // רק את השורה הבאה צריך לשנות לשם המתאים.
+        Adj adj = loadAdjFromDirectedLGF(lgf, /*skipNeg=*/true);
+
         print_summary(adj);
     }
     catch (const std::exception& ex) {
