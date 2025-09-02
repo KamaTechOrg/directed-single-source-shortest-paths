@@ -27,4 +27,5 @@ add_subdirectory(tools/rb2lemon)
 # טסטים
 enable_testing()
 set(CTEST_OUTPUT_ON_FAILURE ON)
+
 add_subdirectory(tests)

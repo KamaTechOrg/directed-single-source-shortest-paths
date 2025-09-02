@@ -8,18 +8,19 @@ add_executable(SSSP
   ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 
-# ---- include dirs (הוספת tools/rb2lemon) ----
+# ---- include dirs ( tools/rb2lemon) ----
 target_include_directories(show_adj_from_lgf PRIVATE
-  ${CMAKE_SOURCE_DIR}/tools/rb2lemon   # <<< החדש
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon  
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
 )
 
 target_include_directories(SSSP PRIVATE
-  ${CMAKE_SOURCE_DIR}/tools/rb2lemon   # <<< אם צריך גם כאן
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon   
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
 )
 
 target_link_libraries(show_adj_from_lgf PRIVATE lemon)
 target_link_libraries(SSSP            PRIVATE lemon)
+
