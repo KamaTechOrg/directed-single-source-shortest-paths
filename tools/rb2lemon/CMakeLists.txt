@@ -1,6 +1,5 @@
 # tools/rb2lemon/CMakeLists.txt
 
-# ספריית ליבה – לוגיקת ההמרה
 add_library(rbconv STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/rb_to_lemon.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/rb_to_lemon.hpp
@@ -9,7 +8,7 @@ target_link_libraries(rbconv PUBLIC lemon)
 target_include_directories(rbconv
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${lemon_SOURCE_DIR}      # כדי שהכולל <lemon/...> יעבוד
+    ${lemon_SOURCE_DIR}     
     ${lemon_BINARY_DIR}
 )
 
