@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-# === LEMON פעם אחת ===
+# === LEMON ===
 set(LEMON_ENABLE_GLPK   OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CPLEX  OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CLP    OFF CACHE BOOL "" FORCE)
@@ -18,13 +18,10 @@ FetchContent_Declare(lemon
 )
 FetchContent_MakeAvailable(lemon)
 
-# קוד הפרויקט
 add_subdirectory(src)
 
-# כלי ההמרה
 add_subdirectory(tools/rb2lemon)
 
-# טסטים
 enable_testing()
 set(CTEST_OUTPUT_ON_FAILURE ON)
 
