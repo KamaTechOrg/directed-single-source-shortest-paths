@@ -1,0 +1,10 @@
+@nodes
+id
+0
+1
+2
+@arcs
+    id1 id2 weight
+0   1   1.0
+1   2   2.0
+0   2   3.5
