@@ -6,16 +6,13 @@
 static std::string NarrowUTF8(const std::wstring& ws) {
     if (ws.empty()) return {};
 
-    // כמה בתים נצטרך
     int sz = WideCharToMultiByte(CP_UTF8, 0,
         ws.c_str(), static_cast<int>(ws.size()),
         nullptr, 0, nullptr, nullptr);
     if (sz <= 0) return {};
 
-    // נריץ פעם שנייה לכתיבה
     std::string out(sz, '\0');
 
-    // חלק מהכלים רואים data() כ-const; נשתמש ב-&out[0] שהוא char* תקני
     char* dst = out.empty() ? nullptr : &out[0];
 
     int written = WideCharToMultiByte(CP_UTF8, 0,
@@ -23,7 +20,6 @@ static std::string NarrowUTF8(const std::wstring& ws) {
         dst, sz, nullptr, nullptr);
     if (written <= 0) return {};
 
-    // אם נכתב פחות (לא אמור לקרות), נתקן אורך
     if (written != sz) out.resize(written);
 
     return out;
@@ -31,16 +27,16 @@ static std::string NarrowUTF8(const std::wstring& ws) {
 
 
 static bool PickRBFile(std::wstring& outPath) {
-    wchar_t buf[MAX_PATH] = L"";                 // <<< בופר רחב
-    OPENFILENAMEW ofn{};                         // <<< OPENFILENAMEW
+    wchar_t buf[MAX_PATH] = L"";                 
+    OPENFILENAMEW ofn{};                         
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = nullptr;
-    ofn.lpstrFilter = L"RB files (*.rb)\0*.rb\0All files (*.*)\0*.*\0"; // <<< רחב
-    ofn.lpstrFile = buf;                       // <<< LPWSTR
+    ofn.lpstrFilter = L"RB files (*.rb)\0*.rb\0All files (*.*)\0*.*\0"; 
+    ofn.lpstrFile = buf;                       
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-    ofn.lpstrTitle = L"בחרי קובץ RB להמרה";     // <<< רחב
-    if (GetOpenFileNameW(&ofn)) {                // <<< גרסת W
+    ofn.lpstrTitle = L"בחרי קובץ RB להמרה";     
+    if (GetOpenFileNameW(&ofn)) {                
         outPath = buf;
         return true;
     }

@@ -29,3 +29,11 @@ enable_testing()
 set(CTEST_OUTPUT_ON_FAILURE ON)
 
 add_subdirectory(tests)
+
+
+# UTF-8 on MSVC and GCC/Clang
+if (MSVC)
+  add_compile_options(/utf-8)
+else()
+  add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+endif()

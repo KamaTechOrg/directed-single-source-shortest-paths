@@ -1,10 +1,10 @@
 
 #include <iostream>
 #include <string>
-#include <vector>      // std::vector
-#include <utility>     // std::pair
-#include <algorithm>   // std::min
-#include <fstream>     // std::ifstream
+#include <vector>      
+#include <utility>    
+#include <algorithm>   
+#include <fstream>     
 
 #include "lgf_to_adj.hpp"
 

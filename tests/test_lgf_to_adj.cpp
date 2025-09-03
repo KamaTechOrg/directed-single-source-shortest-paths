@@ -1,6 +1,5 @@
-// tests/lgf_to_adj_test.cpp
 
-#include "lgf_to_adj.hpp"   // מגדיר Adj ו-lgf_to_adj(...)
+#include "lgf_to_adj.hpp"   
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <lemon/core.h>
@@ -10,18 +9,16 @@
 #include <vector>
 #include <utility>
 #include <chrono>
-#include <cstdio>      // std::remove
+#include <cstdio>     
 
-// הנתיב שבתוכו ניצור את קבצי הטסט
 #ifndef RB2LEMON_TMP_DIR
 #  define RB2LEMON_TMP_DIR "tools/rb2lemon/tmp_lgf"
 #endif
 
-// יצירת תיקייה (ללא <filesystem>)
 static void ensure_dir_exists(const char* dir) {
 #ifdef _WIN32
 #include <direct.h>
-    _mkdir(dir); // שקט אם קיים
+    _mkdir(dir); 
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -29,7 +26,6 @@ static void ensure_dir_exists(const char* dir) {
 #endif
 }
 
-// כתיבת קובץ LGF זמני והחזרת הנתיב המלא (string)
 static std::string write_temp_lgf(const std::string& content,
     const std::string& base = "lgf_test")
 {
@@ -47,7 +43,6 @@ static std::string write_temp_lgf(const std::string& content,
     return path;
 }
 
-// מיון רשימות שכנים להשוואה יציבה
 static void sort_adj(Adj& adj) {
     for (auto& nbrs : adj) {
         std::sort(nbrs.begin(), nbrs.end(),
@@ -61,7 +56,6 @@ static void sort_adj(Adj& adj) {
 using ::testing::ElementsAre;
 using Pair = std::pair<int, double>;
 
-// --- טסטים ---
 
 TEST(LgfDirected, BasicTriangle) {
     auto path = write_temp_lgf(
@@ -141,7 +135,7 @@ TEST(LgfDirected, IsolatedNodes) {
         "1     1\n"
         "2     2\n"
         "@arcs\n"
-        "    weight\n",  // אין קשתות
+        "    weight\n",  
         "isolated"
     );
 
@@ -181,8 +175,6 @@ TEST(LgfDirected, NonContiguousLabelsMapping) {
     sort_adj(sorted);
     using P = std::pair<int, double>;
 
-    // האינדקסים נבנים לפי id ממוין: {100,200,500} => {0,1,2}
-    // לכן: 20->5 הוא 1->2 במשקל 2.0, ו-5->10 הוא 2->0 במשקל 1.0
     EXPECT_TRUE(sorted[0].empty());                      // id=100 (label 10)
     EXPECT_THAT(sorted[1], ::testing::ElementsAre(P{ 2,2.0 })); // id=200 (label 20)
     EXPECT_THAT(sorted[2], ::testing::ElementsAre(P{ 0,1.0 })); // id=500 (label 5)
@@ -191,7 +183,6 @@ TEST(LgfDirected, NonContiguousLabelsMapping) {
 }
 
 
-// 2) כפילויות קשת מכוונת נשמרות (אין דה-דופ)
 TEST(LgfDirected, KeepsDuplicateArcs) {
     auto path = write_temp_lgf(
         "@nodes\n"
@@ -208,7 +199,6 @@ TEST(LgfDirected, KeepsDuplicateArcs) {
     Adj adj = lgf_to_adj(path, true);
     ASSERT_EQ(adj.size(), size_t{ 2 });
     ASSERT_EQ(adj[0].size(), size_t{ 2 });
-    // אחרי מיון – שתי הרשומות נשמרות
     auto a0 = adj[0]; sort_adj(adj);
     EXPECT_EQ(adj[0][0].first, 1);
     EXPECT_EQ(adj[0][1].first, 1);
@@ -218,7 +208,6 @@ TEST(LgfDirected, KeepsDuplicateArcs) {
     std::remove(path.c_str());
 }
 
-// 3) משקלים שונים ו־whitespace
 TEST(LgfDirected, WeightParsingAndWhitespace) {
     auto path = write_temp_lgf(
         "@nodes\n"
@@ -228,9 +217,9 @@ TEST(LgfDirected, WeightParsingAndWhitespace) {
         "2 2\n"
         "@arcs\n"
         "    weight\n"
-        "0\t1\t0\n"        // אפס חוקי
-        "0   2   0.5\n"    // נקודה עשרונית
-        "1   2   1e-3\n",  // מדעית
+        "0\t1\t0\n"        
+        "0   2   0.5\n"    
+        "1   2   1e-3\n",  
         "weights_ws"
     );
 
@@ -246,14 +235,13 @@ TEST(LgfDirected, WeightParsingAndWhitespace) {
     std::remove(path.c_str());
 }
 
-// 4) שגיאת פורמט – חסרה עמודת weight
 TEST(LgfDirected, MissingWeightColumnThrows) {
     auto path = write_temp_lgf(
         "@nodes\n"
         "label id\n"
         "0 0\n"
         "1 1\n"
-        "@arcs\n"   // ללא 'weight'
+        "@arcs\n"   
         "0 1 2.0\n",
         "missing_weight"
     );
