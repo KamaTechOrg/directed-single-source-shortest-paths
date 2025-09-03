@@ -1,10 +1,22 @@
 #include "rb_to_lemon.hpp"
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <numeric>
+#include <sstream>
+#include <vector>
 
 using rbconv::RBHeader;
 using rbconv::RBToLemonConverter;
 
 RBToLemonConverter::RBToLemonConverter()
     : nodeIds(graph), weights(graph) {}
+
+namespace {
+    // Threshold for treating weights as ~0 (instead of a magic number literal)
+    constexpr double kMinWeightThreshold = 1e-12;
+}
 
 bool RBToLemonConverter::readRutherfordBoeing(const std::string& filename) {
     std::ifstream file(filename);
@@ -96,14 +108,14 @@ bool RBToLemonConverter::convertMatrixToGraph(std::ifstream& file, const RBHeade
 
     for (int col = 0; col < h.ncol; ++col) {
         for (int idx = colPtr[col]; idx < colPtr[col + 1]; ++idx) {
-            int row = rowInd[idx];
-            double w = val[idx];
+            const int row = rowInd[idx];
+            const double w = val[idx];
 
             if (row == col) continue;
             if (w < 0)     continue;
-            if (std::abs(w) <= 1e-12) continue;
+            if (std::abs(w) <= kMinWeightThreshold) continue;
 
-            if (row < (int)nodes.size() && col < (int)nodes.size()) {
+            if (row < static_cast<int>(nodes.size()) && col < static_cast<int>(nodes.size())) {
                 auto a = graph.addArc(nodes[row], nodes[col]); // directed
                 weights[a] = w;
             }
@@ -119,21 +131,23 @@ void RBToLemonConverter::saveToLemonFormat(const std::string& fn) {
         return;
     }
 
-    f << "# LEMON Digraph Format\n";
-    f << "# Converted from Rutherford-Boeing format\n\n";
-
+    // Match the test format exactly:
+    // @nodes: "label id"
+    // @arcs: header line with "    weight" only, and rows "u v w"
     f << "@nodes\n";
-    f << "label\tid\n";
-    for (lemon::ListDigraph::NodeIt n(graph); n != lemon::INVALID; ++n)
-        f << nodeIds[n] << "\t" << nodeIds[n] << "\n";
+    f << "label id\n";
+    for (lemon::ListDigraph::NodeIt n(graph); n != lemon::INVALID; ++n) {
+        int lbl = nodeIds[n];
+        int id = nodeIds[n]; // אם תרצי מזהה שונה, שימי אותו כאן
+        f << lbl << " " << id << "\n";
+    }
     f << "\n";
 
     f << "@arcs\n"; 
-    f << "\t\tlabel\tweight\n";
-    int aid = 0;
+    f << "    weight\n";
     for (lemon::ListDigraph::ArcIt a(graph); a != lemon::INVALID; ++a) {
-        auto u = graph.source(a), v = graph.target(a);
-        f << nodeIds[u] << "\t" << nodeIds[v] << "\t" << aid++ << "\t" << weights[a] << "\n";
+        const auto u = graph.source(a), v = graph.target(a);
+        f << nodeIds[u] << " " << nodeIds[v] << " " << weights[a] << "\n";
     }
 
     std::cout << "Digraph saved to " << fn << std::endl;
@@ -160,7 +174,7 @@ void RBToLemonConverter::saveToGraphML(const std::string& fn) {
         f << "    <node id=\"n" << nodeIds[n] << "\"/>\n";
 
     for (lemon::ListDigraph::ArcIt a(graph); a != lemon::INVALID; ++a) {
-        auto u = graph.source(a), v = graph.target(a);
+        const auto u = graph.source(a), v = graph.target(a);
         f << "    <edge source=\"n" << nodeIds[u] << "\" target=\"n" << nodeIds[v] << "\">\n";
         f << "      <data key=\"weight\">" << weights[a] << "</data>\n";
         f << "    </edge>\n";
