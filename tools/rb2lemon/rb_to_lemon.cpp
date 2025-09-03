@@ -61,7 +61,6 @@ bool RBToLemonConverter::readHeader(std::ifstream& file, RBHeader& h) {
 }
 
 bool RBToLemonConverter::convertMatrixToGraph(std::ifstream& file, const RBHeader& h) {
-    // ==== יצירת צמתים ====
     std::vector<lemon::ListDigraph::Node> nodes;
     int maxDim = std::max(h.nrow, h.ncol);
     nodes.reserve(maxDim);
@@ -95,13 +94,11 @@ bool RBToLemonConverter::convertMatrixToGraph(std::ifstream& file, const RBHeade
         val.assign(h.nnzero, 1.0);
     }
 
-    // ==== בניית קשתות מכוונות: row -> col ====
     for (int col = 0; col < h.ncol; ++col) {
         for (int idx = colPtr[col]; idx < colPtr[col + 1]; ++idx) {
             int row = rowInd[idx];
             double w = val[idx];
 
-            // סינונים: אין לולאות עצמיות / אין שלילי / אין אפס
             if (row == col) continue;
             if (w < 0)     continue;
             if (std::abs(w) <= 1e-12) continue;
@@ -131,7 +128,7 @@ void RBToLemonConverter::saveToLemonFormat(const std::string& fn) {
         f << nodeIds[n] << "\t" << nodeIds[n] << "\n";
     f << "\n";
 
-    f << "@arcs\n"; // <<<<<< מכוון
+    f << "@arcs\n"; 
     f << "\t\tlabel\tweight\n";
     int aid = 0;
     for (lemon::ListDigraph::ArcIt a(graph); a != lemon::INVALID; ++a) {
@@ -157,7 +154,7 @@ void RBToLemonConverter::saveToGraphML(const std::string& fn) {
     f << "         xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns "
         "http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n";
     f << "  <key id=\"weight\" for=\"edge\" attr.name=\"weight\" attr.type=\"double\"/>\n";
-    f << "  <graph id=\"G\" edgedefault=\"directed\">\n"; // <<<<<< מכוון
+    f << "  <graph id=\"G\" edgedefault=\"directed\">\n"; 
 
     for (lemon::ListDigraph::NodeIt n(graph); n != lemon::INVALID; ++n)
         f << "    <node id=\"n" << nodeIds[n] << "\"/>\n";
