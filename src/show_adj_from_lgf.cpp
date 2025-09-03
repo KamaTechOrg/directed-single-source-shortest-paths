@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
     //std::string temp = R"(C:\Users\user1\Desktop\directed-single-source-shortest-paths\data\converted_graph.lgf)";
     std::string lgf = argv[1];
 
+
     std::ifstream fin(lgf);
     if (!fin.good()) {
         std::cerr << "LGF not found or cannot be opened: " << lgf << "\n";

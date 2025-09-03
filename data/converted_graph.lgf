@@ -1,19 +1,16 @@
-# LEMON Digraph Format
-# Converted from Rutherford-Boeing format
-
 @nodes
-label	id
-4	4
-3	3
-2	2
-1	1
-0	0
+label id
+4 4
+3 3
+2 2
+1 1
+0 0
 
 @arcs
-		label	weight
-4	2	0	4
-4	1	1	7
-3	0	2	1
-2	3	3	8
-1	2	4	3
-0	1	5	3
+    weight
+4 2 4
+4 1 7
+3 0 1
+2 3 8
+1 2 3
+0 1 3

@@ -11,17 +11,22 @@
 #include <chrono>
 #include <cstdio>     
 
+
+#ifdef _WIN32
+#  include <direct.h>
+#else
+#  include <sys/stat.h>
+#  include <sys/types.h>
+#endif
+
 #ifndef RB2LEMON_TMP_DIR
 #  define RB2LEMON_TMP_DIR "tools/rb2lemon/tmp_lgf"
 #endif
 
 static void ensure_dir_exists(const char* dir) {
 #ifdef _WIN32
-#include <direct.h>
-    _mkdir(dir); 
+    _mkdir(dir);
 #else
-#include <sys/stat.h>
-#include <sys/types.h>
     mkdir(dir, 0755);
 #endif
 }

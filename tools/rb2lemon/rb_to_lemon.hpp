@@ -5,8 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
-#include <sstream>
+//#include <vector>
+//#include <sstream>
 
 #include <lemon/list_graph.h>
 
