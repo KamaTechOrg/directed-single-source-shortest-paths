@@ -2,17 +2,7 @@
 
 include(FetchContent)
 
-# === LEMON ===
-set(LEMON_ENABLE_GLPK  OFF CACHE BOOL "" FORCE)
-set(LEMON_ENABLE_CPLEX OFF CACHE BOOL "" FORCE)
-set(LEMON_ENABLE_CLP   OFF CACHE BOOL "" FORCE)
-set(LEMON_ENABLE_CBC   OFF CACHE BOOL "" FORCE)
-set(LEMON_ENABLE_SOPLEX OFF CACHE BOOL "" FORCE)
 
-FetchContent_Declare(lemon
-  URL https://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.zip
-)
-FetchContent_MakeAvailable(lemon)
 
 # === GoogleTest ===
 FetchContent_Declare(googletest
@@ -41,6 +31,36 @@ target_link_libraries(test_dijkstra
     lemon
 )
 
+
+add_executable(test_lgf_to_adj
+  "test_lgf_to_adj.cpp"
+)
+
+target_include_directories(test_lgf_to_adj PRIVATE
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon
+  ${lemon_SOURCE_DIR}
+  ${lemon_BINARY_DIR}
+)
+
+target_compile_features(test_lgf_to_adj PRIVATE cxx_std_17)
+
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/tools/rb2lemon/tmp_lgf")
+
+target_compile_definitions(test_lgf_to_adj PRIVATE
+  RB2LEMON_TMP_DIR=\"${CMAKE_SOURCE_DIR}/tools/rb2lemon/tmp_lgf\"
+)
+
+target_link_libraries(test_lgf_to_adj PRIVATE
+  gtest_main
+  gmock
+  lemon
+)
+
+
+
+
 # Discover tests (CTest)
 include(GoogleTest)
 gtest_discover_tests(test_dijkstra)
+gtest_discover_tests(test_lgf_to_adj)
+
