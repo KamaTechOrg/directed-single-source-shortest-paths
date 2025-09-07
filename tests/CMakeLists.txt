@@ -2,8 +2,6 @@
 
 include(FetchContent)
 
-
-
 # === GoogleTest ===
 FetchContent_Declare(googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -11,8 +9,7 @@ FetchContent_Declare(googletest
 )
 FetchContent_MakeAvailable(googletest)
 
-# === Tests target ===
-# include test_dijkstra.cpp and test_dijkstra_suite.cpp
+# === Tests target: Dijkstra ===
 add_executable(test_dijkstra
   test_dijkstra.cpp
   test_dijkstra_suite.cpp
@@ -31,9 +28,9 @@ target_link_libraries(test_dijkstra
     lemon
 )
 
-
+# === Tests target: lgf_to_adj (тн GTest) ===
 add_executable(test_lgf_to_adj
-  "test_lgf_to_adj.cpp"
+  ${CMAKE_SOURCE_DIR}/tests/test_lgf_to_adj.cpp
 )
 
 target_include_directories(test_lgf_to_adj PRIVATE
@@ -56,11 +53,29 @@ target_link_libraries(test_lgf_to_adj PRIVATE
   lemon
 )
 
+add_executable(test_show_adj_from_lgf
+  ${CMAKE_SOURCE_DIR}/tests/test_show_adj_from_lgf.cpp
+)
+
+target_include_directories(test_show_adj_from_lgf PRIVATE
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon
+  ${lemon_SOURCE_DIR}
+  ${lemon_BINARY_DIR}
+)
+
+target_link_libraries(test_show_adj_from_lgf PRIVATE
+  lemon
+)
+
+add_test(
+  NAME show_adj_from_lgf_runs
+  COMMAND test_show_adj_from_lgf
+          "${CMAKE_SOURCE_DIR}/data/EAT_RS_graph.lgf"
+)
 
 
 
-# Discover tests (CTest)
+# === Discover tests (GTest) ===
 include(GoogleTest)
 gtest_discover_tests(test_dijkstra)
 gtest_discover_tests(test_lgf_to_adj)
-
