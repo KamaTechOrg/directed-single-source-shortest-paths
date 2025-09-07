@@ -2,11 +2,11 @@
 
 add_executable(show_adj_from_lgf
   ${CMAKE_CURRENT_SOURCE_DIR}/show_adj_from_lgf.cpp
-)
+ "lib/internal/d0.hpp")
 
 add_executable(SSSP
   ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-)
+ "lib/internal/d0.hpp")
 
 # ---- include dirs ( tools/rb2lemon) ----
 target_include_directories(show_adj_from_lgf PRIVATE
