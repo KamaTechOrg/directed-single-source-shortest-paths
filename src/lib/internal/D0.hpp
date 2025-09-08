@@ -1,66 +1,113 @@
-// D0.hpp
 #pragma once
 #include <list>
+#include <vector>
 #include <cstddef>
-#include "ds_common.hpp"
+#include <cassert>
+#include <utility>
+#include <algorithm>      
+#include "ds_common.hpp"  
 
-namespace ds {
+template <class Key>
+class D0 {
+public:
+    using KV = ds::KV<Key>;
+    using Block = ds::Block<Key>;
+    using BlockList = std::list<Block>;
+    using BlockIt = typename BlockList::iterator;
+    using CBlockIt = typename BlockList::const_iterator;
 
-    template <class Key>
-    class D0 {
-    public:
+    explicit D0(std::size_t M) : M_(M) {
+        assert(M_ > 0 && "D0 requires M > 0");
+    }
 
-        using KV = ds::KV<Key>;
-        using Block = ds::Block<Key>;
-        using BlockList = std::list<Block>;
-        using BlockIt = typename BlockList::iterator;
-        using CBlockIt = typename BlockList::const_iterator;
+    std::size_t M()     const noexcept { return M_; }
+    std::size_t size()  const noexcept { return size_; }
+    bool        empty() const noexcept { return size_ == 0; }
 
+    BlockList& blocks()       noexcept { return blocks_; }
+    const BlockList& blocks() const noexcept { return blocks_; }
 
-        explicit D0(std::size_t M) : M_(M) {}
-
-        std::size_t block_capacity() const noexcept { return M_; }
-        void set_block_capacity(std::size_t M) noexcept { M_ = M; }
-
-        bool empty() const noexcept;
-        std::size_t blocks_count() const noexcept;  //number of blocks
-        std::size_t size() const noexcept; //number of items
-
-
-        BlockIt       begin() noexcept;
-        BlockIt       end() noexcept;
-        CBlockIt      begin() const noexcept;
-        CBlockIt      end()   const noexcept;
-        CBlockIt      cbegin() const noexcept;
-        CBlockIt      cend()   const noexcept;
-
-        //Block& front();          //return it for the first block
-		const Block& front() const;  //return it for the first block (const)
-
-        Block pop_front_block(); // take a complete block
-        std::list<KV> take_from_front(std::size_t k); //take partiual from block - k items
-
-        
-		BlockIt push_block_front(const Block& b); //add in the front a block (copy)
-		BlockIt push_block_front(Block&& b); //add in the front a block (move)
+    BlockIt  begin()        noexcept { return blocks_.begin(); }
+    BlockIt  end()          noexcept { return blocks_.end(); }
+    CBlockIt begin()  const noexcept { return blocks_.begin(); }
+    CBlockIt end()    const noexcept { return blocks_.end(); }
+    CBlockIt cbegin() const noexcept { return blocks_.cbegin(); }
+    CBlockIt cend()   const noexcept { return blocks_.cend(); }
 
 
 
-        BlockIt batch_prepend(std::list<KV>&& items);
+    BlockIt batchPrepend(std::list<KV>&& items) {
+         if (items.empty()) return blocks_.end();
+    
+         std::list<Block> tmp;  
+    
+         while (!items.empty()) {
+             Block b;
+    
+             const std::size_t take = std::min<std::size_t>(M_, items.size());
+             auto it = items.begin();
+             for (std::size_t i = 0; i < take; ++i) ++it;
+    
+             b.items.splice(b.items.end(), items, items.begin(), it);
+    
+             b.recompute_upper();
+             b.recompute_lower();
+    
+             tmp.emplace_back(std::move(b));
+             size_ += take;
+         }
+    
+         blocks_.splice(blocks_.begin(), tmp);
+    
+         return blocks_.begin(); 
+     }
 
 
-        /*BlockList& blocks()       noexcept;
-        const BlockList& blocks() const noexcept;*/
+    std::pair<std::list<KV>, std::size_t> pull() {
+        return pull_n_(M_);
+    }
+   
 
-    private:
-        BlockList   blocks_;
-        std::size_t total_size_ = 0; //all the items in the blockList
-        std::size_t M_; 
+private:
+    std::size_t M_;
+    BlockList   blocks_;
+    std::size_t size_ = 0;
 
-        
-        Block make_block_from_prefix(std::list<KV>& items); // create block with M items
 
-        void bump_total_size(std::ptrdiff_t delta) noexcept; // update the count of items
-    };
 
-} // namespace ds
+    std::pair<std::list<KV>, std::size_t> pull_n_(std::size_t n) {
+        std::list<KV> out;
+        std::size_t remaining = n;
+
+        while (remaining > 0 && !blocks_.empty()) {
+            while (!blocks_.empty() && blocks_.front().items.empty())
+                blocks_.pop_front();
+            if (blocks_.empty()) break;
+
+            Block& b = blocks_.front();
+            const std::size_t can_take = std::min<std::size_t>(remaining, b.items.size());
+
+            if (can_take == b.items.size()) {
+                out.splice(out.end(), b.items);
+            }
+            else {
+                auto it = b.items.begin();
+                for (std::size_t i = 0; i < can_take; ++i) ++it;
+                out.splice(out.end(), b.items, b.items.begin(), it);
+            }
+
+            remaining -= can_take;
+            size_ -= can_take;
+
+            if (b.items.empty()) {
+                blocks_.pop_front();
+            }
+            else {
+                b.recompute_upper();
+                b.recompute_lower();
+            }
+        }
+
+        return { std::move(out), remaining }; 
+    }
+};

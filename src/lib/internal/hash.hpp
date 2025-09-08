@@ -1,76 +1,57 @@
-// hash.hpp
 #pragma once
 #include <unordered_map>
-#include <utility>
-#include "ds_common.hpp"
+#include <cstddef>
+#include "ds_common.hpp"   // ds::Handle<Key>
 
-namespace ds {
-    template <class Key> class D0;
-    template <class Key> class D1;
+template <class Key>
+class Hash {
+public:
+    using Handle = ds::Handle<Key>;
 
-    template <class Key>
-    class Hash {
-    public:
-        using KV = ds::KV<Key>;
-        using Block = ds::Block<Key>;
-        using KVList = std::list<KV>;
-        using ItemIt = typename KVList::iterator;
+    explicit Hash(std::size_t expected_size = 0) {
+        if (expected_size) map_.reserve(expected_size);
+    }
 
-        using BlockList = std::list<Block>;
-        using BlockIt = typename BlockList::iterator;
+    std::size_t size()  const noexcept { return map_.size(); }
+    bool        empty() const noexcept { return map_.empty(); }
+    void        clear()        noexcept { map_.clear(); }
 
-        using Map = std::unordered_map<Key, Handle<Key>>;
+   
+    bool contains(const Key& k) const {
+        return map_.find(k) != map_.end();
+    }
 
-        explicit Hash(D0<Key>& d0, D1<Key>& d1, std::size_t expected_size = 0)
-            : d0_(d0), d1_(d1)
-        {
-            if (expected_size) map_.reserve(expected_size);
-        }
+    Handle* get(const Key& k) {
+        auto it = map_.find(k);
+        return (it == map_.end()) ? nullptr : &it->second;
+    }
 
-        bool contains(const Key& k) const noexcept {
-            return map_.find(k) != map_.end();
-        }
+    const Handle* get(const Key& k) const {
+        auto it = map_.find(k);
+        return (it == map_.end()) ? nullptr : &it->second;
+    }
 
-        Handle<Key>* get(const Key& k) noexcept {
-            auto it = map_.find(k);
-            return it == map_.end() ? nullptr : &it->second;
-        }
-        const Handle<Key>* get(const Key& k) const noexcept {
-            auto it = map_.find(k);
-            return it == map_.end() ? nullptr : &it->second;
-        }
+    bool insert(const Key& k, const Handle& h) {
+        auto [it, inserted] = map_.emplace(k, h);
+        return inserted;
+    }
+    bool insert(Key&& k, Handle&& h) {
+        auto [it, inserted] = map_.emplace(std::move(k), std::move(h));
+        return inserted;
+    }
 
-        [[nodiscard]]
-        std::pair<Handle<Key>*, bool>
-            insert_or_update_in_hash(const Key& k, Tier tier, BlockIt bIt, ItemIt iIt) noexcept {
-            auto [it, inserted] = map_.try_emplace(k);
-            it->second.tier = tier;
-            it->second.blockIt = bIt;
-            it->second.itemIt = iIt;
-            return { &it->second, inserted };
-        }
+    void upsert(const Key& k, const Handle& h) {
+        map_[k] = h;
+    }
+    void upsert(Key&& k, Handle&& h) {
+        map_[std::move(k)] = std::move(h);
+    }
 
-        //delete item
-        bool erase(const Key& k) noexcept {           
-            return map_.erase(k) != 0;
-        }
+    
+    bool erase(const Key& k) {
+        return map_.erase(k) > 0;
+    }
 
-		//delete all item in specific block 
-        void on_block_erased(BlockIt bIt) {
-            for (const auto& kv : bIt->items) {
-                map_.erase(kv.key);
-            }
-        }
-
-        std::size_t size() const noexcept { return map_.size(); }
-        bool        empty() const noexcept { return map_.empty(); }
-        void        clear() noexcept { map_.clear(); }
-
-
-    private:
-        D0<Key>& d0_;
-        D1<Key>& d1_;
-        Map      map_;
-    };
-
-} // namespace ds
+private:
+    std::unordered_map<Key, Handle> map_;
+};
