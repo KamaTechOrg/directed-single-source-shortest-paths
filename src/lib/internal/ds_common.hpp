@@ -61,8 +61,8 @@ namespace ds {
         BlockIt  blockIt{};
         ItemIt   itemIt{};
 
-        const Key& key()   const { return it->key; }
-        const double& value() const { return it->value; }
+        const Key& key()   const { return itemIt->key; }
+        const double& value() const { return itemIt->value; }
 
     };
 
