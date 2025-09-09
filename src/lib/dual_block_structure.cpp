@@ -3,6 +3,7 @@
 #include "src/lib/internal/d0.hpp"
 #include "src/lib/internal/d1.hpp"     
 #include "src/lib/internal/hash.hpp"
+#include <string>
 
 template <class Key>
 DualBlockStructure<Key>::DualBlockStructure(std::size_t M, std::size_t B, std::size_t expected_keys)
@@ -80,4 +81,5 @@ void DualBlockStructure<Key>::erase_existing_(const ds::Handle<Key>& h) {
 
 template class DualBlockStructure<int>;
 template class DualBlockStructure<char>;
+template class DualBlockStructure<std::string>;
 

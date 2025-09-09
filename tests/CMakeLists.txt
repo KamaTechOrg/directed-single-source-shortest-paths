@@ -15,7 +15,7 @@ FetchContent_MakeAvailable(googletest)
 # =========================================
 add_executable(test_d0
   ${CMAKE_SOURCE_DIR}/tests/test_d0.cpp
-)
+ )
 target_include_directories(test_d0 PRIVATE
   ${CMAKE_SOURCE_DIR}/src/lib/internal
   ${CMAKE_SOURCE_DIR}/src/lib
@@ -27,9 +27,20 @@ target_link_libraries(test_d0 PRIVATE gtest_main)
 include(GoogleTest)
 gtest_discover_tests(test_d0)
 
+#==========================
+#hash tests
+#==========================
+add_executable(test_hash
+  ${CMAKE_SOURCE_DIR}/tests/test_hash.cpp
+)
+target_include_directories(test_hash PRIVATE
+  ${CMAKE_SOURCE_DIR}/src/lib/internal
+  ${CMAKE_SOURCE_DIR}/src/lib
+)
+target_compile_features(test_hash PRIVATE cxx_std_17)
+target_link_libraries(test_hash PRIVATE gtest_main)
 
-
-
+gtest_discover_tests(test_hash)
 
 
 # =========================================
@@ -38,7 +49,7 @@ gtest_discover_tests(test_d0)
 add_executable(test_dijkstra
   ${CMAKE_SOURCE_DIR}/tests/test_dijkstra.cpp
   ${CMAKE_SOURCE_DIR}/tests/test_dijkstra_suite.cpp
-)
+ )
 target_include_directories(test_dijkstra PRIVATE
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
@@ -55,7 +66,7 @@ target_link_libraries(test_dijkstra PRIVATE gtest_main lemon)
 # =========================================
 add_executable(test_lgf_to_adj
   ${CMAKE_SOURCE_DIR}/tests/test_lgf_to_adj.cpp
-)
+ )
 target_include_directories(test_lgf_to_adj PRIVATE
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
   ${lemon_SOURCE_DIR}
@@ -77,7 +88,7 @@ target_link_libraries(test_lgf_to_adj PRIVATE gtest_main gmock lemon)
 # =========================================
 add_executable(test_show_adj_from_lgf
   ${CMAKE_SOURCE_DIR}/tests/test_show_adj_from_lgf.cpp
-)
+ )
 target_include_directories(test_show_adj_from_lgf PRIVATE
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
   ${lemon_SOURCE_DIR}
@@ -90,6 +101,24 @@ add_test(
   COMMAND test_show_adj_from_lgf
           "${CMAKE_SOURCE_DIR}/data/EAT_RS_graph.lgf"
 )
+
+
+# =========================================
+# Tests target: relax
+# =========================================
+add_executable(test_relax
+  ${CMAKE_SOURCE_DIR}/tests/test_relax.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/algorithms/relax.cpp   
+)
+
+target_include_directories(test_relax PRIVATE
+  ${CMAKE_SOURCE_DIR}/include                         
+)
+
+target_compile_features(test_relax PRIVATE cxx_std_17)
+target_link_libraries(test_relax PRIVATE gtest_main)
+
+gtest_discover_tests(test_relax)
 
 # === Discover tests (GTest) ===
 include(GoogleTest)
