@@ -87,7 +87,7 @@ namespace sssp {
         return out;
     }
 
-    // ===== גרסת std::string עם index_of =====
+    // ===== std::string index_of =====
     RelaxResult<std::string> relax_k_steps(
         const std::vector<std::vector<std::pair<std::string, double>>>& adj,
         std::vector<double>& db,
@@ -154,7 +154,7 @@ namespace sssp {
         return out;
     }
 
-    // Explicit instantiation (אם צריך)
+    // Explicit instantiation 
     template RelaxResult<int> relax_k_steps<int>(const std::vector<std::vector<std::pair<int, double>>>&, std::vector<double>&, std::vector<int>, double, std::size_t);
     template RelaxResult<char> relax_k_steps<char>(const std::vector<std::vector<std::pair<char, double>>>&, std::vector<double>&, std::vector<char>, double, std::size_t);
 
