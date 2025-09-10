@@ -120,6 +120,27 @@ target_link_libraries(test_relax PRIVATE gtest_main)
 
 gtest_discover_tests(test_relax)
 
+
+
+# =========================================
+# Tests target: find_pivots
+# =========================================
+add_executable(test_find_pivots
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_find_pivots.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/algorithms/find_pivots.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/algorithms/relax.cpp  
+)
+
+target_include_directories(test_find_pivots PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+)
+
+target_compile_features(test_find_pivots PRIVATE cxx_std_17)
+target_link_libraries(test_find_pivots PRIVATE gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(test_find_pivots)
+
 # === Discover tests (GTest) ===
 include(GoogleTest)
 gtest_discover_tests(test_dijkstra)
