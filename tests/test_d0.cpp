@@ -12,9 +12,9 @@
 
 using KeyT = int;
 
-static std::list<ds::KV<KeyT>> to_list(const std::vector<std::pair<KeyT, double>>& v) {
-    std::list<ds::KV<KeyT>> out;
-    for (auto& p : v) out.push_back(ds::KV<KeyT>{p.first, p.second});
+static std::list<ds::Node<KeyT>> to_list(const std::vector<std::pair<KeyT, double>>& v) {
+    std::list<ds::Node<KeyT>> out;
+    for (auto& p : v) out.push_back(ds::Node<KeyT>{p.first, p.second});
     return out;
 }
 
@@ -25,7 +25,6 @@ static std::size_t count_blocks(const D0<KeyT>& d0) {
 static void expect_block_bounds_correct(const ds::Block<KeyT>& b) {
     if (b.items.empty()) {
         EXPECT_EQ(b.upper, ds::detail::neg_inf());
-        EXPECT_EQ(b.lower, ds::detail::pos_inf());
         return;
     }
     double mn = std::numeric_limits<double>::infinity();
@@ -34,7 +33,6 @@ static void expect_block_bounds_correct(const ds::Block<KeyT>& b) {
         mn = std::min(mn, kv.value);
         mx = std::max(mx, kv.value);
     }
-    EXPECT_DOUBLE_EQ(b.lower, mn);
     EXPECT_DOUBLE_EQ(b.upper, mx);
 }
 
@@ -45,14 +43,14 @@ TEST(D0, EmptyAtStart) {
     EXPECT_EQ(count_blocks(d0), 0u);
 
     // pull כשהמבנה ריק
-    std::pair<std::list<ds::KV<KeyT>>, std::size_t> res = d0.pull();
+    std::pair<std::list<ds::Node<KeyT>>, std::size_t> res = d0.pull();
     EXPECT_TRUE(res.first.empty());
     EXPECT_EQ(res.second, 3u);
 }
 
 TEST(D0, BatchPrepend_EmptyInput_NoChange) {
     D0<KeyT> d0(4);
-    std::list<ds::KV<KeyT>> empty;
+    std::list<ds::Node<KeyT>> empty;
     auto it = d0.batchPrepend(std::move(empty));
     EXPECT_TRUE(d0.empty());
     EXPECT_EQ(it, d0.end());
@@ -75,7 +73,6 @@ TEST(D0, BatchPrepend_SplitsIntoBlocksAndBounds) {
     for (auto it = d0.begin(); it != d0.end(); ++it) {
         expect_block_bounds_correct(*it);
         for (const auto& kv : it->items) {
-            EXPECT_LE(it->lower - 1e-12, kv.value);
             EXPECT_LE(kv.value, it->upper + 1e-12);
         }
     }
@@ -167,7 +164,6 @@ TEST(D0, BoundsRecomputedAfterPartialPull) {
     ASSERT_FALSE(d0.empty());
     const auto& blk = *d0.begin();
     EXPECT_EQ(blk.items.size(), 3u);
-    EXPECT_DOUBLE_EQ(blk.lower, 2.5);
     EXPECT_DOUBLE_EQ(blk.upper, 7.0);
 }
 
@@ -201,7 +197,6 @@ TEST(D0, PartialPullAcrossBlocks_RecomputesSecondBlockBounds) {
     // (תלוי מהם ארבעת הפריטים שנמשכו; אנחנו יודעים שנמשכו ראשונים לפי סדר הכנסה)
     // לפני המשיכה, הבלוק האחורי הכיל {4:7.0, 5:2.5, 6:6.0, 7:-4.0}
     // משכנו פריט אחד ראשון ממנו (4:7.0), נשארו {5:2.5, 6:6.0, 7:-4.0}
-    EXPECT_DOUBLE_EQ(blk.lower, -4.0);
     EXPECT_DOUBLE_EQ(blk.upper, 6.0);
 }
 
@@ -266,8 +261,8 @@ TEST(D0, SkipConsecutiveEmptyFrontBlocks) {
     D0<KeyT> d0(3);
 
     // נכין ידנית מצב עם שני בלוקים ריקים מקדימה
-    ds::Block<KeyT> b1; b1.items.clear(); b1.recompute_upper(); b1.recompute_lower();
-    ds::Block<KeyT> b2; b2.items.clear(); b2.recompute_upper(); b2.recompute_lower();
+    ds::Block<KeyT> b1; b1.items.clear(); 
+    ds::Block<KeyT> b2; b2.items.clear(); 
     d0.blocks().push_back(std::move(b1));
     d0.blocks().push_back(std::move(b2));
 

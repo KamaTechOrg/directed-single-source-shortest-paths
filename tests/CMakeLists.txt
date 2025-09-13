@@ -1,6 +1,7 @@
 # tests/CMakeLists.txt
 include(FetchContent)
 
+
 # === GoogleTest ===
 FetchContent_Declare(googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -50,6 +51,9 @@ add_executable(test_dijkstra
   ${CMAKE_SOURCE_DIR}/tests/test_dijkstra.cpp
   ${CMAKE_SOURCE_DIR}/tests/test_dijkstra_suite.cpp
  )
+
+ target_compile_features(test_dijkstra PRIVATE cxx_std_17)
+
 target_include_directories(test_dijkstra PRIVATE
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
@@ -89,6 +93,8 @@ target_link_libraries(test_lgf_to_adj PRIVATE gtest_main gmock lemon)
 add_executable(test_show_adj_from_lgf
   ${CMAKE_SOURCE_DIR}/tests/test_show_adj_from_lgf.cpp
  )
+ target_compile_features(test_show_adj_from_lgf PRIVATE cxx_std_17)
+
 target_include_directories(test_show_adj_from_lgf PRIVATE
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
   ${lemon_SOURCE_DIR}

@@ -10,7 +10,7 @@
 template <class Key>
 class D0 {
 public:
-    using KV = ds::KV<Key>;
+    using Node = ds::Node<Key>;
     using Block = ds::Block<Key>;
     using BlockList = std::list<Block>;
     using BlockIt = typename BlockList::iterator;
@@ -36,7 +36,7 @@ public:
 
 
 
-    BlockIt batchPrepend(std::list<KV>&& items) {
+    BlockIt batchPrepend(std::list<Node>&& items) {
          if (items.empty()) return blocks_.end();
     
          std::list<Block> tmp;  
@@ -50,8 +50,6 @@ public:
     
              b.items.splice(b.items.end(), items, items.begin(), it);
     
-             b.recompute_upper();
-             b.recompute_lower();
     
              tmp.emplace_back(std::move(b));
              size_ += take;
@@ -63,7 +61,7 @@ public:
      }
 
 
-    std::pair<std::list<KV>, std::size_t> pull() {
+    std::pair<std::list<Node>, std::size_t> pull() {
         return pull_n_(M_);
     }
    
@@ -75,8 +73,8 @@ private:
 
 
 
-    std::pair<std::list<KV>, std::size_t> pull_n_(std::size_t n) {
-        std::list<KV> out;
+    std::pair<std::list<Node>, std::size_t> pull_n_(std::size_t n) {
+        std::list<Node> out;
         std::size_t remaining = n;
 
         while (remaining > 0 && !blocks_.empty()) {
@@ -102,10 +100,7 @@ private:
             if (b.items.empty()) {
                 blocks_.pop_front();
             }
-            else {
-                b.recompute_upper();
-                b.recompute_lower();
-            }
+
         }
 
         return { std::move(out), remaining }; 
