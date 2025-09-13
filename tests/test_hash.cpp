@@ -11,15 +11,13 @@ using KeyT = int;
 
 struct HandleFixture {
     std::list<ds::Block<KeyT>> blocks;
-    std::list<ds::KV<KeyT>>* itemsPtr = nullptr;
+    std::list<ds::Node<KeyT>>* itemsPtr = nullptr;
 
     std::pair<std::list<ds::Block<KeyT>>::iterator,
-        std::list<ds::KV<KeyT>>::iterator>
+        std::list<ds::Node<KeyT>>::iterator>
         make_block_with_items(const std::vector<std::pair<KeyT, double>>& kvs, std::size_t pick_index) {
         ds::Block<KeyT> b;
-        for (auto& p : kvs) b.items.push_back(ds::KV<KeyT>{p.first, p.second});
-        b.recompute_lower();
-        b.recompute_upper();
+        for (auto& p : kvs) b.items.push_back(ds::Node<KeyT>{p.first, p.second});
         blocks.push_back(std::move(b));
         auto bit = std::prev(blocks.end());
         itemsPtr = &bit->items;
@@ -46,13 +44,12 @@ TEST(Hash, InsertAndGet) {
     auto it = pair1.second;
 
     ds::Handle<KeyT> handle;
-    handle.tier = ds::Tier::D0;
     handle.blockIt = bit;
     handle.itemIt = it;
 
     const KeyT key = it->key;
     const double val = it->value;
-    ds::KV<KeyT>* addr_item = &(*it);
+    ds::Node<KeyT>* addr_item = &(*it);
 
     bool inserted = h.insert(key, handle);
     EXPECT_TRUE(inserted);
@@ -62,7 +59,6 @@ TEST(Hash, InsertAndGet) {
 
     auto* got = h.get(key);
     ASSERT_NE(got, nullptr);
-    EXPECT_EQ(got->tier, ds::Tier::D0);
     EXPECT_EQ(got->key(), key);
     EXPECT_DOUBLE_EQ(got->value(), val);
     EXPECT_TRUE(&(*got->itemIt) == addr_item); // השוואת מצביעים בטוחה
@@ -77,7 +73,6 @@ TEST(Hash, InsertRvalueOverload) {
     auto it = pair1.second;
 
     ds::Handle<KeyT> handle;
-    handle.tier = ds::Tier::D1;
     handle.blockIt = bit;
     handle.itemIt = it;
 
@@ -96,7 +91,7 @@ TEST(Hash, DuplicateInsertFailsSizeUnchanged) {
     auto bit = pair1.first;
     auto it = pair1.second;
 
-    ds::Handle<KeyT> a; a.tier = ds::Tier::D0; a.blockIt = bit; a.itemIt = it;
+    ds::Handle<KeyT> a;  a.blockIt = bit; a.itemIt = it;
     ds::Handle<KeyT> b = a;
 
     EXPECT_TRUE(h.insert(7, a));
@@ -114,17 +109,15 @@ TEST(Hash, UpsertOverwritesExistingHandle) {
     auto p2 = fx.make_block_with_items({ {1,9.9} }, 0);         // key=1 במקום אחר
     auto bit2 = p2.first; auto it2 = p2.second;
 
-    ds::Handle<KeyT> h1; h1.tier = ds::Tier::D0; h1.blockIt = bit1; h1.itemIt = it1;
-    ds::Handle<KeyT> h2; h2.tier = ds::Tier::D1; h2.blockIt = bit2; h2.itemIt = it2;
+    ds::Handle<KeyT> h1;  h1.blockIt = bit1; h1.itemIt = it1;
+    ds::Handle<KeyT> h2;  h2.blockIt = bit2; h2.itemIt = it2;
 
     h.insert(1, h1);
     ASSERT_NE(h.get(1), nullptr);
-    EXPECT_EQ(h.get(1)->tier, ds::Tier::D0);
     EXPECT_TRUE(&(*h.get(1)->itemIt) == &(*it1));
 
     h.upsert(1, h2); // מחליף
     ASSERT_NE(h.get(1), nullptr);
-    EXPECT_EQ(h.get(1)->tier, ds::Tier::D1);
     EXPECT_TRUE(&(*h.get(1)->itemIt) == &(*it2));
     EXPECT_EQ(h.size(), 1u);
 }
@@ -138,8 +131,8 @@ TEST(Hash, EraseAndClear) {
     auto it0 = p.second;
     auto it1 = std::next(bit->items.begin());
 
-    ds::Handle<KeyT> h3; h3.tier = ds::Tier::D0; h3.blockIt = bit; h3.itemIt = it0;
-    ds::Handle<KeyT> h4; h4.tier = ds::Tier::D0; h4.blockIt = bit; h4.itemIt = it1;
+    ds::Handle<KeyT> h3; h3.blockIt = bit; h3.itemIt = it0;
+    ds::Handle<KeyT> h4; h4.blockIt = bit; h4.itemIt = it1;
 
     EXPECT_TRUE(h.insert(3, h3));
     EXPECT_TRUE(h.insert(4, h4));
@@ -165,13 +158,12 @@ TEST(Hash, ConstGet) {
     auto bit = p.first;
     auto it = p.second;
 
-    ds::Handle<KeyT> hh; hh.tier = ds::Tier::D1; hh.blockIt = bit; hh.itemIt = it;
+    ds::Handle<KeyT> hh;  hh.blockIt = bit; hh.itemIt = it;
     h.insert(8, hh);
 
     const Hash<KeyT>& ch = h;
     auto* got = ch.get(8);
     ASSERT_NE(got, nullptr);
-    EXPECT_EQ(got->tier, ds::Tier::D1);
     EXPECT_EQ(got->key(), 8);
     EXPECT_DOUBLE_EQ(got->value(), 8.8);
 }

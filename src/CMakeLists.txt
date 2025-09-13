@@ -7,6 +7,7 @@ add_executable(SSSP
  ${CMAKE_CURRENT_SOURCE_DIR}/lib/algorithms/find_pivots.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/algorithms/relax.cpp   
 )
+target_compile_features(SSSP PUBLIC cxx_std_17)
 
 # ---- include dirs ( tools/rb2lemon) ----
 
