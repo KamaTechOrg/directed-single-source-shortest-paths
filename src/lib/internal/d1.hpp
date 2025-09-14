@@ -209,7 +209,7 @@ D1<Key>::pull(std::size_t count)
 
     std::list<Node> out;
     // ברירת מחדל אם תרצי – מינוס אינסוף:
-    double second_val = -std::numeric_limits<double>::infinity();
+    double second_val = std::numeric_limits<double>::infinity();
 
     if (blocks_.empty()) {
         // לפי מה שאמרת זה לא אמור לקרות, אבל נשאיר התנהגות בטוחה:

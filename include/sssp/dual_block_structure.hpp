@@ -27,7 +27,7 @@ public:
 
     void batch_prepend(KVList&& items);
 
-    KVList pull();
+    std::pair<KVList, double> pull();
 
     bool insert(const Key& key, double value);
 

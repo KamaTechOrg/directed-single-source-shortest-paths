@@ -35,17 +35,28 @@ void DualBlockStructure<Key>::batch_prepend(KVList&& items) {
 }
 
 template <class Key>
-typename DualBlockStructure<Key>::KVList
+std::pair<typename DualBlockStructure<Key>::KVList, double>
 DualBlockStructure<Key>::pull() {
     KVList out;
-    auto [from_d0, deficit] = d0_.pull();   
+
+    double bound = std::numeric_limits<double>::infinity();
+
+    double d0_second = std::numeric_limits<double>::infinity();
+    auto [from_d0, remaining] = d0_.pull(&d0_second, d0_.M());
     out.splice(out.end(), from_d0);
 
-    if (deficit > 0) {
-        KVList from_d1 = d1_.pull(deficit);
+    if (remaining > 0) {
+        d0_second = std::numeric_limits<double>::infinity();
+
+        auto [from_d1, d1_second] = d1_.pull(remaining);
         out.splice(out.end(), from_d1);
+        bound = d1_second; 
     }
-    return out; 
+    else {
+        bound = d0_second;
+    }
+
+    return { std::move(out), bound };
 }
 
 template <class Key>
