@@ -57,6 +57,10 @@ private:
     // block capacity and bias
     std::size_t M_{};
     double B_{};
+private:
+    static ItemIt bfprt_select_(std::vector<ItemIt>& a, std::size_t k);
+    static ItemIt bfprt_select_(std::vector<ItemIt>& a, std::size_t l, std::size_t r, std::size_t k);
+
 };
 
 // ======================== Implementations ========================
@@ -107,32 +111,40 @@ typename D1<Key>::BlockIt
 D1<Key>::split(BlockIt blockIt)
 {
     using ItemItT = typename D1<Key>::ItemIt;
+
+   
+    if (blockIt == blocks_.end() || blockIt->items.size() <= 1)
+        return blockIt;
+
     const std::size_t n = blockIt->items.size();
-    const std::size_t k = n / 2;
-    std::vector<ItemItT> idx;
-    idx.reserve(n);
-    for (auto i = blockIt->items.begin(); i != blockIt->items.end(); ++i)
-        idx.push_back(i);
-    auto mid = idx.begin() + static_cast<std::ptrdiff_t>(k);
-    std::nth_element(idx.begin(), mid, idx.end(),
-        [](const ItemItT& a, const ItemItT& b) { return a->value < b->value; });
-    const double pivot = (*mid)->value;
+    const std::size_t k = n / 2; 
+
+    std::vector<ItemItT> a; a.reserve(n);
+    for (auto it = blockIt->items.begin(); it != blockIt->items.end(); ++it) a.push_back(it);
+
+ 
+    ItemItT itK = bfprt_select_(a, k);
+    const double pivot = itK->value;
+
+    
     std::size_t cnt_lt = 0, cnt_eq = 0;
-    for (const auto& itItem : idx) {
-        if (itItem->value < pivot) ++cnt_lt;
-        else if (itItem->value == pivot) ++cnt_eq;
+    for (const auto& it : a) {
+        if (it->value < pivot) ++cnt_lt;
+        else if (it->value == pivot) ++cnt_eq;
     }
     const std::size_t need_left = k;
     const std::size_t eq_keep_left = (cnt_lt >= need_left) ? 0
         : std::min(cnt_eq, need_left - cnt_lt);
-    std::size_t eq_kept_left = 0;
+
+    
     Block newBlock;
     auto rightIt = blocks_.insert(std::next(blockIt), std::move(newBlock));
-    for (auto cur = blockIt->items.begin(); cur != blockIt->items.end(); /* advance inside */) {
+
+   
+    std::size_t eq_kept_left = 0;
+    for (auto cur = blockIt->items.begin(); cur != blockIt->items.end(); ) {
         const double v = cur->value;
-        const bool move_right =
-            (v > pivot) ||
-            (v == pivot && eq_kept_left >= eq_keep_left);
+        const bool move_right = (v > pivot) || (v == pivot && eq_kept_left >= eq_keep_left);
         if (move_right) {
             auto to_move = cur++;
             rightIt->items.splice(rightIt->items.end(), blockIt->items, to_move);
@@ -142,13 +154,30 @@ D1<Key>::split(BlockIt blockIt)
             ++cur;
         }
     }
-    const double left_old_upper = blockIt->upper;
 
+   
+    if (rightIt->items.empty()) {
+        const double old_upper = blockIt->upper;
+        blockIt->recompute_upper();
+        if (blockIt->upper != old_upper) {
+            delete_node_in_tree(old_upper, blockIt);
+            add_node_in_tree(blockIt->upper, blockIt);
+        }
+        blocks_.erase(rightIt);
+        return blockIt;
+    }
+
+   
+    const double left_old_upper = blockIt->upper;
+    blockIt->recompute_upper();
+    rightIt->recompute_upper();
     delete_node_in_tree(left_old_upper, blockIt);
     add_node_in_tree(blockIt->upper, blockIt);
     add_node_in_tree(rightIt->upper, rightIt);
-    return blockIt;
+
+    return blockIt; 
 }
+
 
 template <class Key>
 typename D1<Key>::BlockIt
@@ -248,3 +277,54 @@ D1<Key>::pull(std::size_t count)
 
     return { std::move(out), second_val };
 }
+
+// ================= BFPRT (Median-of-Medians) =================
+template <class Key>
+typename D1<Key>::ItemIt
+D1<Key>::bfprt_select_(std::vector<ItemIt>& a, std::size_t k) {
+    return bfprt_select_(a, 0, a.size(), k);
+}
+
+template <class Key>
+typename D1<Key>::ItemIt
+D1<Key>::bfprt_select_(std::vector<ItemIt>& a,
+    std::size_t l, std::size_t r, std::size_t k)
+{
+    auto keyOf = [](const ItemIt& it) { return it->value; };
+    const std::size_t len = r - l;
+
+	//small array: sort and return
+    if (len <= 16) {
+        std::sort(a.begin() + l, a.begin() + r,
+            [&](const ItemIt& x, const ItemIt& y) { return keyOf(x) < keyOf(y); });
+        return a[l + k];
+    }
+
+	// medians of 5 groups
+    std::vector<ItemIt> meds; meds.reserve((len + 4) / 5);
+    for (std::size_t i = l; i < r; i += 5) {
+        std::size_t rr = std::min(r, i + 5);
+        std::sort(a.begin() + i, a.begin() + rr,
+            [&](const ItemIt& x, const ItemIt& y) { return keyOf(x) < keyOf(y); });
+        std::size_t seg = rr - i;
+        meds.push_back(a[i + (seg - 1) / 2]);
+    }
+
+	// median of the medians
+    const ItemIt pivotIt = bfprt_select_(meds, 0, meds.size(), meds.size() / 2);
+    const double pivot = keyOf(pivotIt);
+
+    // 
+    auto lessEnd = std::partition(a.begin() + l, a.begin() + r,
+        [&](const ItemIt& x) { return keyOf(x) < pivot; });
+    auto equalEnd = std::partition(lessEnd, a.begin() + r,
+        [&](const ItemIt& x) { return !(pivot < keyOf(x)); }); // x <= pivot
+
+    const std::size_t L = static_cast<std::size_t>(lessEnd - (a.begin() + l));
+    const std::size_t E = static_cast<std::size_t>(equalEnd - lessEnd);
+
+    if (k < L)                 return bfprt_select_(a, l, l + L, k);
+    else if (k < L + E)        return *(lessEnd + (k - L));
+    else                       return bfprt_select_(a, l + L + E, r, k - L - E);
+}
+
