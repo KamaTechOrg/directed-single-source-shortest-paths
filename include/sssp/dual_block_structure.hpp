@@ -15,18 +15,19 @@ template <class Key> class Hash;
 template <class Key>
 class DualBlockStructure {
 public:
-    using KV = ds::KV<Key>;
+    using Node = ds::Node<Key>;
     using Block = ds::Block<Key>;
-    using KVList = std::list<KV>;
+    using KVList = std::list<Node>;
 
     DualBlockStructure(std::size_t M, std::size_t B, std::size_t expected_keys = 0);
+    void initialize(std::size_t M, std::size_t B, std::size_t expected_keys = 0);
 
     std::size_t M() const noexcept { return M_; }
     std::size_t B() const noexcept { return B_; }
 
     void batch_prepend(KVList&& items);
 
-    KVList pull();
+    std::pair<KVList, double> pull();
 
     bool insert(const Key& key, double value);
 

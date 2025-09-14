@@ -23,3 +23,14 @@ CMakeCache.txt
 # Tools
 compile_commands.json
 tools/rb2lemon/tmp_lgf/
+
+
+# VS test & coverage
+TestResults/
+*.coverage
+*.trx
+coverage*.xml
+coverage_html/
+default*.profraw
+*.profdata
+
