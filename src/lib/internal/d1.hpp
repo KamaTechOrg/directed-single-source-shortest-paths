@@ -22,24 +22,24 @@ public:
     using CBlockIt = typename BlockList::const_iterator;
     using ItemIt = typename std::list<Node>::iterator;
 
-    explicit D1(std::size_t M, double B);
+    explicit D1(std::size_t maxBlockSize, double globalUpperBound);
 
-    /*std::size_t M()     const noexcept;
-    bool empty() const noexcept;*/
+    std::size_t maxBlockSize()     const noexcept;
+    bool empty() const noexcept;
 
     BlockIt choose_block_for_value(double value);
 
     BlockIt split(BlockIt blockIt);
 
-    BlockIt insert_block(std::list<Node>&& items, double upper, BlockIt where);
+    BlockIt insert_block(std::list<Node>&& items, double blockUpper, BlockIt where);
 
     void delete_block(BlockIt it);
 
     void delete_item(BlockIt bIt, ItemIt iIt);
 
-    void add_node_in_tree(double upper, BlockIt it);
+    void add_node_in_tree(double blockUpper, BlockIt it);
 
-    void delete_node_in_tree(double upper, BlockIt it);
+    void delete_node_in_tree(double blockUpper, BlockIt it);
 
     std::pair<std::list<Node>, double> 
     pull(std::size_t count);
@@ -55,8 +55,8 @@ private:
     BlockList blocks_;
 
     // block capacity and bias
-    std::size_t M_{};
-    double B_{};
+    std::size_t maxBlockSize_{};
+    double globalUpperBound_{};
 private:
     static ItemIt bfprt_select_(std::vector<ItemIt>& a, std::size_t k);
     static ItemIt bfprt_select_(std::vector<ItemIt>& a, std::size_t l, std::size_t r, std::size_t k);
@@ -66,36 +66,36 @@ private:
 // ======================== Implementations ========================
 
 template<class Key>
-D1<Key>::D1(std::size_t M, double B) : M_(M), B_(B) {
-    assert(M_ > 0);
+D1<Key>::D1(std::size_t maxBlockSize, double globalUpperBound) : maxBlockSize_(maxBlockSize), globalUpperBound_(globalUpperBound) {
+    assert(maxBlockSize_ > 0);
     typename D1<Key>::Block sentinel;  
-    sentinel.upper = B_;               
+    sentinel.blockUpper = globalUpperBound_;
     auto it = blocks_.insert(blocks_.end(), std::move(sentinel));
-    typename D1<Key>::TauKey k{ it->upper, static_cast<const void*>(&(*it)) };
+    typename D1<Key>::TauKey k{ it->blockUpper, static_cast<const void*>(&(*it)) };
     tree_.emplace(k, it);
 }
 
 
-//template <class Key>
-//std::size_t D1<Key>::M() const noexcept {
-//    return M_;
-//}
-//
-//template <class Key>
-//bool D1<Key>::empty() const noexcept {
-//    if (blocks_.empty()) return true;
-//    for (const auto& b : blocks_) {
-//        if (!b.items.empty()) return false;
-//    }
-//    return true;
-//}
+template <class Key>
+std::size_t D1<Key>::maxBlockSize() const noexcept {
+    return maxBlockSize_;
+}
+
+template <class Key>
+bool D1<Key>::empty() const noexcept {
+    if (blocks_.empty()) return true;
+    for (const auto& b : blocks_) {
+        if (!b.items.empty()) return false;
+    }
+    return true;
+}
 
 template <class Key>
 typename D1<Key>::BlockIt
 D1<Key>::choose_block_for_value(double value)
 {
     assert(!tree_.empty() && "D1 tree must contain at least the sentinel block");
-    assert(value <= B_ && "value exceeds global upper bound B");
+    assert(value <= globalUpperBound_ && "value exceeds global upper bound B");
     TauKey probe{ value, nullptr };
     auto it = tree_.lower_bound(probe);
     if (it != tree_.end()) {
@@ -150,15 +150,15 @@ D1<Key>::split(BlockIt blockIt)
         blocks_.erase(rightIt);
         return blockIt;
     }
-    const double left_old_upper = blockIt->upper;
+    const double left_old_upper = blockIt->blockUpper;
     const double left_new_upper = pivot;
     const double right_new_upper = left_old_upper;
 
     delete_node_in_tree(left_old_upper, blockIt);
-    blockIt->upper = left_new_upper;
-    add_node_in_tree(blockIt->upper, blockIt);
-    rightIt->upper = right_new_upper;
-    add_node_in_tree(rightIt->upper, rightIt);
+    blockIt->blockUpper = left_new_upper;
+    add_node_in_tree(blockIt->blockUpper, blockIt);
+    rightIt->blockUpper = right_new_upper;
+    add_node_in_tree(rightIt->blockUpper, rightIt);
     return blockIt; 
 }
 
@@ -166,19 +166,19 @@ D1<Key>::split(BlockIt blockIt)
 
 template <class Key>
 typename D1<Key>::BlockIt
-D1<Key>::insert_block(std::list<Node>&& items, double upper, BlockIt where) {
+D1<Key>::insert_block(std::list<Node>&& items, double blockUpper, BlockIt where) {
     Block b;
     b.items = std::move(items);
-    b.upper = upper;
+    b.blockUpper = blockUpper;
     auto it = blocks_.insert(where, std::move(b));
-    add_node_in_tree(upper, it);
+    add_node_in_tree(blockUpper, it);
     return it;
 }
 
 template <class Key>
 void D1<Key>::delete_block(BlockIt it) {
     if (it == blocks_.end()) return;
-    delete_node_in_tree(it->upper, it);
+    delete_node_in_tree(it->blockUpper, it);
     blocks_.erase(it);
 }
 
@@ -194,15 +194,15 @@ void D1<Key>::delete_item(BlockIt bIt, ItemIt iIt) {
 
 
 template <class Key>
-void D1<Key>::add_node_in_tree(double upper, BlockIt it) {
-    TauKey k{ upper, static_cast<const void*>(&(*it)) };
+void D1<Key>::add_node_in_tree(double blockUpper, BlockIt it) {
+    TauKey k{ blockUpper, static_cast<const void*>(&(*it)) };
     tree_.emplace(k, it);
 }
 
 
 template <class Key>
-void D1<Key>::delete_node_in_tree(double upper, BlockIt it) {
-    TauKey k{ upper, static_cast<const void*>(&(*it)) };
+void D1<Key>::delete_node_in_tree(double blockUpper, BlockIt it) {
+    TauKey k{ blockUpper, static_cast<const void*>(&(*it)) };
     auto p = tree_.find(k);
     if (p != tree_.end()) tree_.erase(p);
 }
@@ -232,7 +232,7 @@ D1<Key>::pull(std::size_t count)
         }
 
         if (items.empty()) {
-            delete_node_in_tree(bIt->upper, bIt);
+            delete_node_in_tree(bIt->blockUpper, bIt);
             bIt = blocks_.erase(bIt);
         }
         else {

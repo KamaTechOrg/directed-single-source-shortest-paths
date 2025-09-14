@@ -25,7 +25,7 @@ namespace ds {
     struct Block {
         std::list<Node<Key>> items;
 
-        double upper = detail::neg_inf(); 
+        double blockUpper = detail::neg_inf();
 
         std::size_t size() const noexcept { return items.size(); }
 
@@ -35,8 +35,8 @@ namespace ds {
     //that is the value for key in the hash table
     template <class Key>
     struct Handle {
-        using KVList = std::list<Node<Key>>;
-        using ItemIt = typename KVList::iterator;
+        using NodeList = std::list<Node<Key>>;
+        using ItemIt = typename NodeList::iterator;
 
         using BlockList = std::list<Block<Key>>;
         using BlockIt = typename BlockList::iterator;

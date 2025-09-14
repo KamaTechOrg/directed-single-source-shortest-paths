@@ -17,17 +17,17 @@ class DualBlockStructure {
 public:
     using Node = ds::Node<Key>;
     using Block = ds::Block<Key>;
-    using KVList = std::list<Node>;
+    using NodeList = std::list<Node>;
 
-    DualBlockStructure(std::size_t M, std::size_t B, std::size_t expected_keys = 0);
-    void initialize(std::size_t M, std::size_t B, std::size_t expected_keys = 0);
+    DualBlockStructure(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
+    void initialize(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
 
-    std::size_t M() const noexcept { return M_; }
-    std::size_t B() const noexcept { return B_; }
+    std::size_t maxBlockSize() const noexcept { return maxBlockSize_; }
+    std::size_t globalUpperBound() const noexcept { return globalUpperBound_; }
 
-    void batch_prepend(KVList&& items);
+    void batch_prepend(NodeList&& items);
 
-    std::pair<KVList, double> pull();
+    std::pair<NodeList, double> pull();
 
     bool insert(const Key& key, double value);
 
@@ -38,8 +38,8 @@ public:
     const Hash<Key>& map() const noexcept { return hash_; }
 
 private:
-    std::size_t M_;
-    std::size_t B_;
+    std::size_t maxBlockSize_;
+    std::size_t globalUpperBound_;
 
     D0<Key>   d0_;
     D1<Key>   d1_;
