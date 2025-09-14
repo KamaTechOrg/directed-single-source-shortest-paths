@@ -7,7 +7,6 @@ template <class Key>
 class Hash {
 public:
     using Handle = ds::Handle<Key>;
-
     explicit Hash(std::size_t expected_size = 0) {
         if (expected_size) map_.reserve(expected_size);
     }

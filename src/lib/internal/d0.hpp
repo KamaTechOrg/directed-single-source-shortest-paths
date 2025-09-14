@@ -17,11 +17,11 @@ public:
     using BlockIt = typename BlockList::iterator;
     using CBlockIt = typename BlockList::const_iterator;
 
-    explicit D0(std::size_t M) : M_(M) {
-        assert(M_ > 0 && "D0 requires M > 0");
+    explicit D0(std::size_t maxBlockSize) : maxBlockSize_(maxBlockSize) {
+        assert(maxBlockSize_ > 0 && "D0 requires maxBlockSize > 0");
     }
 
-    std::size_t M()     const noexcept { return M_; }
+    std::size_t maxBlockSize()     const noexcept { return maxBlockSize_; }
     std::size_t size()  const noexcept { return size_; }
     bool        empty() const noexcept { return size_ == 0; }
 
@@ -45,7 +45,7 @@ public:
          while (!items.empty()) {
              Block b;
     
-             const std::size_t take = std::min<std::size_t>(M_, items.size());
+             const std::size_t take = std::min<std::size_t>(maxBlockSize_, items.size());
              auto it = items.begin();
              for (std::size_t i = 0; i < take; ++i) ++it;
     
@@ -132,7 +132,7 @@ public:
    
 
 private:
-    std::size_t M_;
+    std::size_t maxBlockSize_;
     BlockList   blocks_;
     std::size_t size_ = 0;
 

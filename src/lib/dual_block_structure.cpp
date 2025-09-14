@@ -6,43 +6,43 @@
 #include <string>
 
 template <class Key>
-DualBlockStructure<Key>::DualBlockStructure(std::size_t M, std::size_t B, std::size_t expected_keys)
-    : M_(M)
-    , B_(B)
-    , d0_(M)                                  
-    , d1_(M, static_cast<double>(B))          
+DualBlockStructure<Key>::DualBlockStructure(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys)
+    : maxBlockSize_(maxBlockSize)
+    , globalUpperBound_(globalUpperBound)
+    , d0_(maxBlockSize)
+    , d1_(maxBlockSize, static_cast<double>(globalUpperBound))
     , hash_(expected_keys)                    
 {
-    assert(M_ > 0 && "DualBlockStructure: M must be > 0");
+    assert(maxBlockSize_ > 0 && "DualBlockStructure: maxBlockSize must be > 0");
 }
 
 template <class Key>
-void DualBlockStructure<Key>::initialize(std::size_t M, std::size_t B, std::size_t expected_keys)
+void DualBlockStructure<Key>::initialize(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys)
 {
-    assert(M > 0 && "DualBlockStructure::initialize: M must be > 0");
+    assert(maxBlockSize > 0 && "DualBlockStructure::initialize: maxBlockSize must be > 0");
 
-    M_ = M;
-    B_ = B;
+    maxBlockSize_ = maxBlockSize;
+    globalUpperBound_ = globalUpperBound;
 
-    d0_ = D0<Key>(M);
-    d1_ = D1<Key>(M, static_cast<double>(B));
+    d0_ = D0<Key>(maxBlockSize);
+    d1_ = D1<Key>(maxBlockSize, static_cast<double>(globalUpperBound));
     hash_ = Hash<Key>(expected_keys);
 }
 
 template <class Key>
-void DualBlockStructure<Key>::batch_prepend(KVList&& items) {
+void DualBlockStructure<Key>::batch_prepend(NodeList&& items) {
     d0_.batchPrepend(std::move(items));
 }
 
 template <class Key>
-std::pair<typename DualBlockStructure<Key>::KVList, double>
+std::pair<typename DualBlockStructure<Key>::NodeList, double>
 DualBlockStructure<Key>::pull() {
-    KVList out;
+    NodeList out;
 
     double bound = std::numeric_limits<double>::infinity();
 
     double d0_second = std::numeric_limits<double>::infinity();
-    auto [from_d0, remaining] = d0_.pull(&d0_second, d0_.M());
+    auto [from_d0, remaining] = d0_.pull(&d0_second, d0_.maxBlockSize());
     out.splice(out.end(), from_d0);
 
     if (remaining > 0) {

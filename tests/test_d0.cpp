@@ -33,10 +33,10 @@ TEST(D0, EmptyAtStart) {
     EXPECT_EQ(d0.size(), 0u);
     EXPECT_EQ(count_blocks(d0), 0u);
 
-    double second = -1.0; // יישאר ללא שינוי כי remaining>0
-    auto res = d0.pull(&second, d0.M());
+    double second = -1.0; // יישאר אינסוף כי remaining>0
+    auto res = d0.pull(&second, d0.maxBlockSize());
     EXPECT_TRUE(res.first.empty());
-    EXPECT_EQ(res.second, d0.M());
+    EXPECT_EQ(res.second, d0.maxBlockSize());
     EXPECT_TRUE(std::isinf(second));
 }
 
@@ -50,7 +50,7 @@ TEST(D0, BatchPrepend_EmptyInput_NoChange) {
 }
 
 TEST(D0, BatchPrepend_ThenPullM_ComputesSecondValFromNextBlockMin) {
-    // M=3, נכניס 7 פריטים => שני בלוקים מלאים ועוד בלוק של 1
+    // maxBlockSize=3, נכניס 7 פריטים => שני בלוקים מלאים ועוד בלוק של 1
     D0<KeyT> d0(3);
     auto items = to_list({
         {1, 1.2}, {2, 0.5}, {3, 0.7}, {4, 1.0}, {5, 2.3}, {6, 2.1}, {7, -0.4}
@@ -60,11 +60,11 @@ TEST(D0, BatchPrepend_ThenPullM_ComputesSecondValFromNextBlockMin) {
     ASSERT_EQ(d0.size(), 7u);
     ASSERT_EQ(count_blocks(d0), 3u);
 
-    // נמשוך M פריטים
+    // נמשוך maxBlockSize פריטים
     double second = std::numeric_limits<double>::quiet_NaN();
-    auto r = d0.pull(&second, d0.M());
+    auto r = d0.pull(&second, d0.maxBlockSize());
     EXPECT_EQ(r.second, 0u);
-    EXPECT_EQ(r.first.size(), d0.M());
+    EXPECT_EQ(r.first.size(), d0.maxBlockSize());
     EXPECT_EQ(d0.size(), 4u);
 
     // second אמור להיות ה-min של הבלוק הראשון הלא ריק שנותר
@@ -86,9 +86,9 @@ TEST(D0, MultipleBatchPrepends_LIFOByBatch) {
 
     ASSERT_EQ(count_blocks(d0), 3u);
 
-    // pull ראשון (M=2) צריך למשוך את שניהם של B
+    // pull ראשון (maxBlockSize=2) צריך למשוך את שניהם של B
     double second = 0.0;
-    auto r1 = d0.pull(&second, d0.M());
+    auto r1 = d0.pull(&second, d0.maxBlockSize());
     ASSERT_EQ(r1.second, 0u);
     ASSERT_EQ(r1.first.size(), 2u);
     auto it = r1.first.begin();
@@ -96,7 +96,7 @@ TEST(D0, MultipleBatchPrepends_LIFOByBatch) {
     EXPECT_EQ(it->key, 21);
 
     // pull שני אמור להתחיל למשוך מ-A
-    auto r2 = d0.pull(&second, d0.M());
+    auto r2 = d0.pull(&second, d0.maxBlockSize());
     ASSERT_EQ(r2.second, 0u);
     ASSERT_EQ(r2.first.size(), 2u);
     it = r2.first.begin();
@@ -104,9 +104,9 @@ TEST(D0, MultipleBatchPrepends_LIFOByBatch) {
     EXPECT_EQ(it->key, 11);
 
     // pull שלישי – נשאר {12}
-    auto r3 = d0.pull(&second, d0.M());
+    auto r3 = d0.pull(&second, d0.maxBlockSize());
     EXPECT_EQ(r3.first.size(), 1u);
-    EXPECT_EQ(r3.second, d0.M() - 1); // חסרים כדי להשלים M
+    EXPECT_EQ(r3.second, d0.maxBlockSize() - 1); // חסרים כדי להשלים maxBlockSize
     ASSERT_EQ(r3.first.begin()->key, 12);
 
     EXPECT_TRUE(d0.empty());
@@ -114,7 +114,7 @@ TEST(D0, MultipleBatchPrepends_LIFOByBatch) {
 }
 
 TEST(D0, PullAcrossBlocks_SecondValReflectsNextBlock) {
-    // M=4, 7 פריטים => בלוק של 4 ואז בלוק של 3
+    // maxBlockSize=4, 7 פריטים => בלוק של 4 ואז בלוק של 3
     D0<KeyT> d0(4);
     auto items = to_list({
         {1,  5.0}, {2,  1.0}, {3,  3.0}, {4,  7.0},
@@ -125,7 +125,7 @@ TEST(D0, PullAcrossBlocks_SecondValReflectsNextBlock) {
     ASSERT_EQ(count_blocks(d0), 2u);
 
     double second = 0.0;
-    auto r = d0.pull(&second, d0.M()); // מושך 4, נשארים 3
+    auto r = d0.pull(&second, d0.maxBlockSize()); // מושך 4, נשארים 3
     EXPECT_EQ(r.second, 0u);
     EXPECT_EQ(r.first.size(), 4u);
     ASSERT_FALSE(d0.empty());
@@ -144,7 +144,7 @@ TEST(D0, PullMoreThanAvailable_ReturnsRemainingAndDoesNotSetSecond) {
     EXPECT_EQ(r.first.size(), 2u);             // כל מה שהיה
     EXPECT_EQ(r.second, want - 2u);            // כמה שחסר
     EXPECT_TRUE(d0.empty());
-    // לפי המימוש שלך, כשremaining>0 לא מחשבים second_val – נשאר הערך הקודם
+    // לפי המימוש: בתחילת pull מאפסים ל-infinity, וכש-remaining>0 לא מחשבים second
     EXPECT_TRUE(std::isinf(second));
 }
 
@@ -157,7 +157,7 @@ TEST(D0, MEquals1_SingleItemBlocksAndFIFOWithinBlock) {
 
     for (int i = 0; i < 3; ++i) {
         double s = 0.0;
-        auto p = d0.pull(&s, d0.M());
+        auto p = d0.pull(&s, d0.maxBlockSize());
         EXPECT_EQ(p.second, 0u);
         EXPECT_EQ(p.first.size(), 1u);
 
@@ -177,8 +177,8 @@ TEST(D0, ExactMultipleOfM_NoLeftoverBlocks) {
     EXPECT_EQ(count_blocks(d0), 2u);
 
     double s = 0.0;
-    auto p1 = d0.pull(&s, d0.M()); EXPECT_EQ(p1.second, 0u); EXPECT_EQ(p1.first.size(), 3u);
-    auto p2 = d0.pull(&s, d0.M()); EXPECT_EQ(p2.second, 0u); EXPECT_EQ(p2.first.size(), 3u);
+    auto p1 = d0.pull(&s, d0.maxBlockSize()); EXPECT_EQ(p1.second, 0u); EXPECT_EQ(p1.first.size(), 3u);
+    auto p2 = d0.pull(&s, d0.maxBlockSize()); EXPECT_EQ(p2.second, 0u); EXPECT_EQ(p2.first.size(), 3u);
     EXPECT_TRUE(d0.empty());
     EXPECT_EQ(count_blocks(d0), 0u);
 }
@@ -195,10 +195,11 @@ TEST(D0, SkipConsecutiveEmptyFrontBlocks) {
     // ואז נוסיף batch אמיתי (נכנס לראש באמצעות splice)
     auto items = to_list({ {1, 1.0}, {2, 2.0}, {3, 3.0} });
     d0.batchPrepend(std::move(items));
+    d0.size(); // לוודא שהקומפילר לא מתלונן על unused (לא חובה)
     EXPECT_EQ(d0.size(), 3u);
 
     double s = 0.0;
-    auto p = d0.pull(&s, d0.M());
+    auto p = d0.pull(&s, d0.maxBlockSize());
     EXPECT_EQ(p.second, 0u);
     EXPECT_EQ(p.first.size(), 3u);
     EXPECT_TRUE(d0.empty());
