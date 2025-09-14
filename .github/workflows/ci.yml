@@ -3,10 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches:
-      - main
-      - d-structure
-      - D0
+    branches: [ main, d-structure, D0 ]
 
 jobs:
   build-and-test:
@@ -29,12 +26,18 @@ jobs:
         with:
           submodules: recursive
 
-      # ---------- Linux (gcc/clang) ----------
-      - name: Install tools (Linux)
+      - name: Show workspace
+        run: |
+          pwd
+          ls -la
+          test -f CMakeLists.txt && echo "CMakeLists found" || (echo "CMakeLists NOT found!" && exit 1)
+
+      # ---------- Linux ----------
+      - name: Install toolchain (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y ninja-build build-essential clang
 
       - name: Select compiler (Linux)
         if: runner.os == 'Linux'
@@ -46,6 +49,14 @@ jobs:
             echo "CC=clang"    >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
           fi
+
+      - name: Versions (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cmake --version
+          $CC --version
+          $CXX --version
+          ninja --version
 
       - name: Configure (Linux)
         if: runner.os == 'Linux'
@@ -59,7 +70,17 @@ jobs:
         if: runner.os == 'Linux'
         run: ctest --test-dir build -C Release --output-on-failure
 
-      # ---------- Windows (MSVC) ----------
+      # ---------- Windows ----------
+      - name: MSVC env
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Versions (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake --version
+          cl
+
       - name: Configure (Windows, MSVC)
         if: runner.os == 'Windows'
         run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
