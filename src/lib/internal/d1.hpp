@@ -112,21 +112,16 @@ D1<Key>::split(BlockIt blockIt)
 {
     using ItemItT = typename D1<Key>::ItemIt;
 
-   
-    if (blockIt == blocks_.end() || blockIt->items.size() <= 1)
-        return blockIt;
-
     const std::size_t n = blockIt->items.size();
     const std::size_t k = n / 2; 
+    std::vector<ItemItT> a;
+    a.reserve(n);
 
-    std::vector<ItemItT> a; a.reserve(n);
-    for (auto it = blockIt->items.begin(); it != blockIt->items.end(); ++it) a.push_back(it);
-
- 
+   
+    for (auto it = blockIt->items.begin(); it != blockIt->items.end(); ++it)
+        a.push_back(it);
     ItemItT itK = bfprt_select_(a, k);
     const double pivot = itK->value;
-
-    
     std::size_t cnt_lt = 0, cnt_eq = 0;
     for (const auto& it : a) {
         if (it->value < pivot) ++cnt_lt;
@@ -135,16 +130,13 @@ D1<Key>::split(BlockIt blockIt)
     const std::size_t need_left = k;
     const std::size_t eq_keep_left = (cnt_lt >= need_left) ? 0
         : std::min(cnt_eq, need_left - cnt_lt);
-
-    
     Block newBlock;
     auto rightIt = blocks_.insert(std::next(blockIt), std::move(newBlock));
-
-   
     std::size_t eq_kept_left = 0;
     for (auto cur = blockIt->items.begin(); cur != blockIt->items.end(); ) {
         const double v = cur->value;
-        const bool move_right = (v > pivot) || (v == pivot && eq_kept_left >= eq_keep_left);
+        const bool move_right =
+            (v > pivot) || (v == pivot && eq_kept_left >= eq_keep_left);
         if (move_right) {
             auto to_move = cur++;
             rightIt->items.splice(rightIt->items.end(), blockIt->items, to_move);
@@ -154,29 +146,22 @@ D1<Key>::split(BlockIt blockIt)
             ++cur;
         }
     }
-
-   
     if (rightIt->items.empty()) {
-        const double old_upper = blockIt->upper;
-        blockIt->recompute_upper();
-        if (blockIt->upper != old_upper) {
-            delete_node_in_tree(old_upper, blockIt);
-            add_node_in_tree(blockIt->upper, blockIt);
-        }
         blocks_.erase(rightIt);
         return blockIt;
     }
-
-   
     const double left_old_upper = blockIt->upper;
-    blockIt->recompute_upper();
-    rightIt->recompute_upper();
-    delete_node_in_tree(left_old_upper, blockIt);
-    add_node_in_tree(blockIt->upper, blockIt);
-    add_node_in_tree(rightIt->upper, rightIt);
+    const double left_new_upper = pivot;
+    const double right_new_upper = left_old_upper;
 
+    delete_node_in_tree(left_old_upper, blockIt);
+    blockIt->upper = left_new_upper;
+    add_node_in_tree(blockIt->upper, blockIt);
+    rightIt->upper = right_new_upper;
+    add_node_in_tree(rightIt->upper, rightIt);
     return blockIt; 
 }
+
 
 
 template <class Key>
