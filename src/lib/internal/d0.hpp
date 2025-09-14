@@ -4,7 +4,8 @@
 #include <cstddef>
 #include <cassert>
 #include <utility>
-#include <algorithm>      
+#include <algorithm>  
+#include <limits>
 #include "ds_common.hpp"  
 
 template <class Key>

@@ -22,34 +22,27 @@ public:
     using CBlockIt = typename BlockList::const_iterator;
     using ItemIt = typename std::list<Node>::iterator;
 
-    // constructor with block size M and bias B
     explicit D1(std::size_t M, double B);
 
-    std::size_t M()     const noexcept;
-    bool empty() const noexcept;
+    /*std::size_t M()     const noexcept;
+    bool empty() const noexcept;*/
 
-    // Choose the block whose τ is the smallest ≥ value
     BlockIt choose_block_for_value(double value);
 
-    // Split a block that exceeds M
     BlockIt split(BlockIt blockIt);
 
-    // Create a new block, set bounds, and link the items list
     BlockIt insert_block(std::list<Node>&& items, double upper, BlockIt where);
 
-    // Remove a block
     void delete_block(BlockIt it);
 
-    // Erase one item from a block; if τ changed – rekey tree; if empty – delete block
     void delete_item(BlockIt bIt, ItemIt iIt);
 
-    // Add/remove a Node in the balanced tree
     void add_node_in_tree(double upper, BlockIt it);
 
     void delete_node_in_tree(double upper, BlockIt it);
 
-    // Pull up to count items from minimal-τ block(s); if count==0 → defaults to M
-    std::pair<std::list<Node>, double> pull(std::size_t count);
+    std::pair<std::list<Node>, double> 
+    pull(std::size_t count);
 
 
 private:
@@ -79,19 +72,19 @@ D1<Key>::D1(std::size_t M, double B) : M_(M), B_(B) {
 }
 
 
-template <class Key>
-std::size_t D1<Key>::M() const noexcept {
-    return M_;
-}
-
-template <class Key>
-bool D1<Key>::empty() const noexcept {
-    if (blocks_.empty()) return true;
-    for (const auto& b : blocks_) {
-        if (!b.items.empty()) return false;
-    }
-    return true;
-}
+//template <class Key>
+//std::size_t D1<Key>::M() const noexcept {
+//    return M_;
+//}
+//
+//template <class Key>
+//bool D1<Key>::empty() const noexcept {
+//    if (blocks_.empty()) return true;
+//    for (const auto& b : blocks_) {
+//        if (!b.items.empty()) return false;
+//    }
+//    return true;
+//}
 
 template <class Key>
 typename D1<Key>::BlockIt
@@ -200,7 +193,6 @@ void D1<Key>::delete_node_in_tree(double upper, BlockIt it) {
     if (p != tree_.end()) tree_.erase(p);
 }
 
-// במימוש:
 template <class Key>
 std::pair<std::list<typename D1<Key>::Node>, double>
 D1<Key>::pull(std::size_t count)
@@ -208,11 +200,9 @@ D1<Key>::pull(std::size_t count)
     assert(count > 0 && "pull(count): count must be > 0");
 
     std::list<Node> out;
-    // ברירת מחדל אם תרצי – מינוס אינסוף:
     double second_val = std::numeric_limits<double>::infinity();
 
     if (blocks_.empty()) {
-        // לפי מה שאמרת זה לא אמור לקרות, אבל נשאיר התנהגות בטוחה:
         return { std::move(out), second_val };
     }
 
