@@ -12,7 +12,7 @@ FetchContent_MakeAvailable(googletest)
 
 
 # =========================================
-# D0 tests (target נפרד)
+# D0 tests 
 # =========================================
 add_executable(test_d0
   ${CMAKE_SOURCE_DIR}/tests/test_d0.cpp
@@ -22,7 +22,7 @@ target_include_directories(test_d0 PRIVATE
   ${CMAKE_SOURCE_DIR}/src/lib
 )
 
-target_compile_features(test_d0 PRIVATE cxx_std_17)   # <<< חשוב!
+target_compile_features(test_d0 PRIVATE cxx_std_17)   
 
 target_link_libraries(test_d0 PRIVATE gtest_main)
 include(GoogleTest)
@@ -57,7 +57,7 @@ add_executable(test_dijkstra
 target_include_directories(test_dijkstra PRIVATE
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
-  ${CMAKE_SOURCE_DIR}/src/lib/internal  # אם הטסטים כוללים את d0/ds_common
+  ${CMAKE_SOURCE_DIR}/src/lib/internal 
   ${CMAKE_SOURCE_DIR}/src/lib
 )
 target_link_libraries(test_dijkstra PRIVATE gtest_main lemon)
@@ -66,7 +66,7 @@ target_link_libraries(test_dijkstra PRIVATE gtest_main lemon)
 
 
 # =========================================
-# Tests target: lgf_to_adj (עם GTest)
+# Tests target: lgf_to_adj 
 # =========================================
 add_executable(test_lgf_to_adj
   ${CMAKE_SOURCE_DIR}/tests/test_lgf_to_adj.cpp
@@ -75,7 +75,7 @@ target_include_directories(test_lgf_to_adj PRIVATE
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
-  ${CMAKE_SOURCE_DIR}/src/lib/internal  # אם צריך
+  ${CMAKE_SOURCE_DIR}/src/lib/internal 
   ${CMAKE_SOURCE_DIR}/src/lib
 )
 target_compile_features(test_lgf_to_adj PRIVATE cxx_std_17)
@@ -88,7 +88,7 @@ target_link_libraries(test_lgf_to_adj PRIVATE gtest_main gmock lemon)
 
 
 # =========================================
-# Tests target: show_adj_from_lgf (דוגמה להרצה ידנית)
+# Tests target: show_adj_from_lgf 
 # =========================================
 add_executable(test_show_adj_from_lgf
   ${CMAKE_SOURCE_DIR}/tests/test_show_adj_from_lgf.cpp
