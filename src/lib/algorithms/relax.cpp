@@ -1,4 +1,6 @@
-#include "sssp/algorithms/relax.hpp"
+﻿#include "sssp/algorithms/relax.hpp"
+#include "sssp/util/index_mapping.hpp"   
+
 #include <cassert>
 #include <type_traits>
 #include <cstddef>
@@ -9,16 +11,8 @@
 
 namespace sssp {
 
-    template<class Key>
-    static inline std::size_t to_index(Key k) {
-        static_assert(std::is_integral<Key>::value, "Key must be integral for this overload");
-        if constexpr (std::is_same_v<Key, char>) {
-            return static_cast<std::size_t>(static_cast<unsigned char>(k));
-        }
-        else {
-            return static_cast<std::size_t>(k);
-        }
-    }
+    using sssp::util::key_to_index;
+
 
     template<class Key>
     RelaxResult<Key> relax_k_steps(
@@ -41,7 +35,7 @@ namespace sssp {
         auto push_union = [&](const Key& vKey) {
             std::size_t iv = to_index(vKey);
             if (!inW[iv]) { inW[iv] = 1; out.W_union.push_back(vKey); }
-            };
+        };
 
         // W0 = S
         for (const Key& u : S) push_union(u);
@@ -52,16 +46,17 @@ namespace sssp {
 
         for (std::size_t step = 1; step <= K; ++step) {
             Wi.clear();
+            std::vector<char> inWi(n, 0);
 
             for (const Key& uKey : Wi_prev) {
-                std::size_t iu = to_index(uKey);
+                std::size_t iu = key_to_index(uKey);
                 const double du = db[iu];
 
                 for (const auto& edge : adj[iu]) {
                     const Key& vKey = edge.first;
                     const double wuv = edge.second;
 
-                    std::size_t iv = to_index(vKey);
+                    std::size_t iv = key_to_index(vKey);
                     const double cand = du + wuv;
 
                     if (cand <= db[iv]) {
@@ -72,7 +67,8 @@ namespace sssp {
                                 out.decreased_keys.push_back(vKey);
                             }
                         }
-                        if (cand < B && !inW[iv]) {        
+                        if (cand < B && !inWi[iv]) {
+                            inWi[iv] = 1;
                             Wi.push_back(vKey);
                         }
                     }
@@ -86,6 +82,7 @@ namespace sssp {
 
         return out;
     }
+
 
     // ===== std::string index_of =====
     RelaxResult<std::string> relax_k_steps(
@@ -106,7 +103,7 @@ namespace sssp {
         std::vector<char> decMarked(n, 0);          
 
         auto push_union = [&](const std::string& vKey) {
-            std::size_t iv = index_of(vKey);
+            std::size_t iv = key_to_index(vKey);
             if (!inW[iv]) { inW[iv] = 1; out.W_union.push_back(vKey); }
             };
 
@@ -119,16 +116,17 @@ namespace sssp {
 
         for (std::size_t step = 1; step <= K; ++step) {
             Wi.clear();
+            std::vector<char> inWi(n, 0);
 
             for (const auto& uKey : Wi_prev) {
-                std::size_t iu = index_of(uKey);
+                std::size_t iu = key_to_index(uKey);
                 const double du = db[iu];
 
                 for (const auto& edge : adj[iu]) {
                     const std::string& vKey = edge.first;
                     const double wuv = edge.second;
 
-                    std::size_t iv = index_of(vKey);
+                    std::size_t iv = key_to_index(vKey);
                     const double cand = du + wuv;
 
                     if (cand <= db[iv]) {
@@ -139,7 +137,8 @@ namespace sssp {
                                 out.decreased_keys.push_back(vKey);
                             }
                         }
-                        if (cand < B && !inW[iv]) {        
+                        if (cand < B && !inWi[iv]) {
+                            inWi[iv] = 1;
                             Wi.push_back(vKey);
                         }
                     }
