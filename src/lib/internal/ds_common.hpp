@@ -1,4 +1,9 @@
 // ds_common.hpp
+//ds_common.hpp defines the core data types used across the project :
+// Node(a key–value pair),
+// Block(a list of nodes with an upper bound),
+// and Handle(iterators pointing to a specific node within a block)
+// .In short, it provides the shared building blocks that D0, D1, and Hash rely on.
 #pragma once
 #include <list>
 #include <limits>
@@ -15,12 +20,14 @@ namespace ds {
         }
     }
 
+    //that is a struct node
     template <class Key>
     struct Node {
         Key    key;    
         double value;  
     };
 
+    //that is the struct block
     template <class Key>
     struct Block {
         std::list<Node<Key>> items;
