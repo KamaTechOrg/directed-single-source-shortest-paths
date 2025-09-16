@@ -1,3 +1,7 @@
+   //D0(front buffer) :
+   // Maintains a front - ordered list of fixed - capacity blocks(size ? M)
+   // and supports fast batch ingestion by splicing whole ranges without copying; 
+   // pull removes up to n nodes from the front
 #pragma once
 #include <list>
 #include <vector>
@@ -35,8 +39,10 @@ public:
     CBlockIt cbegin() const noexcept { return blocks_.cbegin(); }
     CBlockIt cend()   const noexcept { return blocks_.cend(); }
 
-
-
+//betchPrepend
+// Build consecutive blocks from the given node list, each of size at most M,
+// then splice all newly created blocks to the front of D0 in a single O(1) operation.
+// Returns an iterator to the first newly inserted block (or end() if 'items' was empty).
     BlockIt batchPrepend(std::list<Node>&& items) {
          if (items.empty()) return blocks_.end();
     
@@ -62,6 +68,13 @@ public:
      }
 
 
+    // pull:
+    // Remove up to 'n' nodes from the FRONT-most blocks, preserving order within blocks.
+    // Write into 'out'; return {out, remaining} where 'remaining' is how many we could not take.
+    // If 'second_val' is provided and we fully satisfied 'n' (remaining==0):
+    //    - set *second_val to the minimum value of the NEXT non-empty block,
+    //      or to the maximum value among the items we just pulled if no blocks remain.
+    // This makes 'second_val' act as a "next-threshold" for callers that need a bound.
     std::pair<std::list<Node>, std::size_t> pull(double* second_val, std::size_t n) {
         if (second_val) {
             *second_val = std::numeric_limits<double>::infinity();
@@ -69,15 +82,16 @@ public:
 
         std::list<Node> out;
         std::size_t remaining = n;
-
+        // Consume from front blocks until we satisfy 'n' or run out of items
         while (remaining > 0 && !blocks_.empty()) {
+            // Skip empty  blocks
             while (!blocks_.empty() && blocks_.front().items.empty())
                 blocks_.pop_front();
             if (blocks_.empty()) break;
 
             Block& b = blocks_.front();
             const std::size_t can_take = std::min<std::size_t>(remaining, b.items.size());
-
+            //  take whole block
             if (can_take == b.items.size()) {
                 out.splice(out.end(), b.items);
             }
@@ -89,7 +103,7 @@ public:
 
             remaining -= can_take;
             size_ -= can_take;
-
+            // Drop empty block
             if (b.items.empty()) {
                 blocks_.pop_front();
             }
@@ -107,6 +121,7 @@ public:
             }
 
             if (first_non_empty) {
+                // next bound is the MIN value in the next available block
                 const auto& items = first_non_empty->items;
                 const auto minIt = std::min_element(
                     items.begin(), items.end(),
@@ -117,6 +132,7 @@ public:
                 }
             }
             else {
+                // No more blocks: fall back to the MAX among the items we just pulled
                 if (!out.empty()) {
                     const auto maxIt = std::max_element(
                         out.begin(), out.end(),
@@ -134,6 +150,6 @@ public:
 private:
     std::size_t maxBlockSize_;
     BlockList   blocks_;
-    std::size_t size_ = 0;
+    std::size_t size_ = 0;// total nodes across all blocks
 
 };
