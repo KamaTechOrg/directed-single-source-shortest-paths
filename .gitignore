@@ -14,6 +14,11 @@ CMakeCache.txt
 *.dll
 *.so
 *.dylib
+TestResults/
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
 
 # IDEs
 .vscode/
