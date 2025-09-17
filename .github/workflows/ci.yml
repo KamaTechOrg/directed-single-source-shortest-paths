@@ -1,0 +1,94 @@
+# name: CI
+
+# on:
+#   pull_request:
+#   push:
+#     branches: [ main, d-structure, D0 ]
+
+# jobs:
+#   build-and-test:
+#     name: ${{ matrix.os }} / ${{ matrix.compiler }}
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         include:
+#           - os: ubuntu-latest
+#             compiler: gcc
+#           - os: ubuntu-latest
+#             compiler: clang
+#           - os: windows-latest
+#             compiler: msvc
+
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+#         with:
+#           submodules: recursive
+
+#       - name: Show workspace
+#         run: |
+#           pwd
+#           ls -la
+#           test -f CMakeLists.txt && echo "CMakeLists found" || (echo "CMakeLists NOT found!" && exit 1)
+
+#       ---------- Linux ----------
+#       - name: Install toolchain (Linux)
+#         if: runner.os == 'Linux'
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y ninja-build build-essential clang
+
+#       - name: Select compiler (Linux)
+#         if: runner.os == 'Linux'
+#         run: |
+#           if [ "${{ matrix.compiler }}" = "gcc" ]; then
+#             echo "CC=gcc"  >> $GITHUB_ENV
+#             echo "CXX=g++" >> $GITHUB_ENV
+#           else
+#             echo "CC=clang"    >> $GITHUB_ENV
+#             echo "CXX=clang++" >> $GITHUB_ENV
+#           fi
+
+#       - name: Versions (Linux)
+#         if: runner.os == 'Linux'
+#         run: |
+#           cmake --version
+#           $CC --version
+#           $CXX --version
+#           ninja --version
+
+#       - name: Configure (Linux)
+#         if: runner.os == 'Linux'
+#         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+#       - name: Build (Linux)
+#         if: runner.os == 'Linux'
+#         run: cmake --build build --config Release -- -v
+
+#       - name: Test (Linux)
+#         if: runner.os == 'Linux'
+#         run: ctest --test-dir build -C Release --output-on-failure
+
+#       ---------- Windows ----------
+#       - name: MSVC env
+#         if: runner.os == 'Windows'
+#         uses: ilammy/msvc-dev-cmd@v1
+
+#       - name: Versions (Windows)
+#         if: runner.os == 'Windows'
+#         run: |
+#           cmake --version
+#           cl
+
+#       - name: Configure (Windows, MSVC)
+#         if: runner.os == 'Windows'
+#         run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+#       - name: Build (Windows)
+#         if: runner.os == 'Windows'
+#         run: cmake --build build --config Release
+
+#       - name: Test (Windows)
+#         if: runner.os == 'Windows'
+#         run: ctest --test-dir build -C Release --output-on-failure
