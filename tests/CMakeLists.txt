@@ -10,7 +10,7 @@ FetchContent_Declare(googletest
 FetchContent_MakeAvailable(googletest)
 
 # =========================================
-# D0 tests
+# D0 tests 
 # =========================================
 add_executable(test_d0
   ${CMAKE_SOURCE_DIR}/tests/test_d0.cpp
@@ -19,7 +19,9 @@ target_include_directories(test_d0 PRIVATE
   ${CMAKE_SOURCE_DIR}/src/lib/internal
   ${CMAKE_SOURCE_DIR}/src/lib
 )
-target_compile_features(test_d0 PRIVATE cxx_std_17)
+
+target_compile_features(test_d0 PRIVATE cxx_std_17)   
+
 target_link_libraries(test_d0 PRIVATE gtest_main)
 include(GoogleTest)
 gtest_discover_tests(test_d0)
@@ -56,7 +58,7 @@ target_link_libraries(test_dijkstra PRIVATE gtest_main lemon)
 gtest_discover_tests(test_dijkstra)
 
 # =========================================
-# lgf_to_adj tests
+# Tests target: lgf_to_adj 
 # =========================================
 add_executable(test_lgf_to_adj
   ${CMAKE_SOURCE_DIR}/tests/test_lgf_to_adj.cpp
@@ -65,7 +67,7 @@ target_include_directories(test_lgf_to_adj PRIVATE
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
-  ${CMAKE_SOURCE_DIR}/src/lib/internal
+  ${CMAKE_SOURCE_DIR}/src/lib/internal 
   ${CMAKE_SOURCE_DIR}/src/lib
 )
 target_compile_features(test_lgf_to_adj PRIVATE cxx_std_17)
@@ -77,7 +79,7 @@ target_link_libraries(test_lgf_to_adj PRIVATE gtest_main gmock lemon)
 gtest_discover_tests(test_lgf_to_adj)
 
 # =========================================
-# show_adj_from_lgf (הרצה ידנית)
+# Tests target: show_adj_from_lgf 
 # =========================================
 add_executable(test_show_adj_from_lgf
   ${CMAKE_SOURCE_DIR}/tests/test_show_adj_from_lgf.cpp
