@@ -1,26 +1,30 @@
 #pragma once
 #include <type_traits>
-#include <string>
 #include <cstddef>
-#include <functional>
+#include <unordered_map>
+#include <string>
 
 namespace sssp {
 	namespace util {
 
+
+
 		template<class Key>
-		inline std::size_t key_to_index(const Key& k) {
-			static_assert(std::is_integral_v<Key>, "Key must be integral here");
+		inline auto make_integral_indexer() {
+			static_assert(std::is_integral_v<Key>, "Integral keys only");
 			if constexpr (std::is_same_v<Key, char>) {
-				return static_cast<std::size_t>(static_cast<unsigned char>(k));
+				return [](char c) -> std::size_t {
+					return static_cast<std::size_t>(static_cast<unsigned char>(c));
+					};
 			}
 			else {
-				return static_cast<std::size_t>(k);
+				return [](Key k) -> std::size_t { return static_cast<std::size_t>(k); };
 			}
 		}
 
-		inline std::size_t key_to_index(const std::string& s,
-			const std::function<std::size_t(const std::string&)>& index_of) {
-			return index_of(s);
+		template<class Key>
+		inline auto make_map_indexer(const std::unordered_map<Key, std::size_t>& m) {
+			return [&m](const Key& k) -> std::size_t { return m.at(k); };
 		}
-	}
+	} // namespace util
 } // namespace sssp::util
