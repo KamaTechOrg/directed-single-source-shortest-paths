@@ -102,7 +102,6 @@ add_test(
 # =========================================
 add_executable(test_relax
   ${CMAKE_SOURCE_DIR}/tests/test_relax.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/algorithms/relax.cpp
 )
 target_include_directories(test_relax PRIVATE
   ${CMAKE_SOURCE_DIR}/include
@@ -116,8 +115,6 @@ gtest_discover_tests(test_relax)
 # =========================================
 add_executable(test_find_pivots
   ${CMAKE_CURRENT_SOURCE_DIR}/test_find_pivots.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/algorithms/find_pivots.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/algorithms/relax.cpp
 )
 target_include_directories(test_find_pivots PRIVATE
   ${CMAKE_SOURCE_DIR}/include
@@ -125,6 +122,8 @@ target_include_directories(test_find_pivots PRIVATE
 target_compile_features(test_find_pivots PRIVATE cxx_std_17)
 target_link_libraries(test_find_pivots PRIVATE gtest_main)
 gtest_discover_tests(test_find_pivots)
+
+
 
 
 add_executable(test_d1
@@ -143,6 +142,37 @@ target_link_libraries(test_d1 PRIVATE gtest_main)
 
 
 add_test(NAME test_d1_all COMMAND test_d1)
+
+
+
+# =========================================
+# dual_block_flow tests
+# =========================================
+add_executable(test_dual_block_flow
+  ${CMAKE_SOURCE_DIR}/tests/test_dual_block_flow.cpp
+  # אם המימוש ב־.cpp נדרש (לא תבניות), צרפי גם אותו:
+  ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp
+)
+
+target_include_directories(test_dual_block_flow PRIVATE
+  ${CMAKE_SOURCE_DIR}/include            # כדי ש-#include "sssp/..." יעבוד
+  ${CMAKE_SOURCE_DIR}/src/lib/internal   # d0.hpp, d1.hpp, hash.hpp, ds_common.hpp
+  ${CMAKE_SOURCE_DIR}/src/lib
+  # אם הקובץ משתמש גם ב-lemon, שמרי את שני הבאים:
+  ${lemon_SOURCE_DIR}
+  ${lemon_BINARY_DIR}
+)
+
+target_compile_features(test_dual_block_flow PRIVATE cxx_std_17)
+target_link_libraries(test_dual_block_flow PRIVATE gtest_main
+  # הוסיפי lemon אם את משתמשת בו בטסט:
+  lemon
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_dual_block_flow)
+
+
 
 
 # include(GoogleTest)

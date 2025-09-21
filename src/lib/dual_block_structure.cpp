@@ -1,9 +1,10 @@
 #include "sssp/dual_block_structure.hpp"
 
-#include "src/lib/internal/d0.hpp"
-#include "src/lib/internal/d1.hpp"     
-#include "src/lib/internal/hash.hpp"
+#include "d0.hpp"
+#include "d1.hpp"
+#include "hash.hpp"
 #include <string>
+#include <limits>
 
 template <class Key>
 DualBlockStructure<Key>::DualBlockStructure(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys)
@@ -85,7 +86,7 @@ bool DualBlockStructure<Key>::insert(const Key& key, double value) {
 
 template <class Key>
 void DualBlockStructure<Key>::erase_existing_(const ds::Handle<Key>& h) {
-   d1_.delete_item(h.blockIt, h.itemIt);
+    d1_.delete_item(h.blockIt, &*h.itemIt);
 }
 
 

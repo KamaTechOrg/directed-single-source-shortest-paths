@@ -39,7 +39,6 @@ namespace sssp {
         }
     } // namespace detail
 
-    // פונקציה אחת בלבד: תמיד עם index_of (פונקציה/פונקטור Key->size_t)
     template<class Key, class IndexOf>
     inline PivotsResult<Key> find_pivots(
         const std::vector<std::vector<std::pair<Key, double>>>& adj,
@@ -50,7 +49,7 @@ namespace sssp {
         IndexOf index_of)
     {
         const std::size_t n = adj.size();
-        const std::vector<Key> S0 = S; // נשמור עותק לפי האלגוריתם
+        const std::vector<Key> S0 = S; 
 
         auto rr = relax_k_steps<Key>(adj, db, std::move(S), B, K, index_of);
         const auto& W = rr.W_union;
