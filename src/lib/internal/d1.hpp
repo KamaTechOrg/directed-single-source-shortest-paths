@@ -14,6 +14,7 @@
 #include <optional>
 #include <iterator>
 #include <limits>
+#include <functional>
 
 template <class Key>
 class D1 {
@@ -38,7 +39,8 @@ public:
 
     void delete_block(BlockIt it);
 
-    void delete_item(BlockIt bIt, ItemIt iIt);
+    // Safe deletion API: delete by a stable pointer (survives split/splice/pull).
+    bool delete_item(BlockIt bIt, const Node * ptr);
 
     void add_node_in_tree(double blockUpper, BlockIt it);
 
@@ -52,10 +54,16 @@ private:
     // τ-key ordering: (upper bound τ, block address). Address ensures uniqueness when τ ties.
     using TauKey = std::pair<double, const void*>;
 
-    using TauKey = std::pair<double, const void*>;
-
+    struct TauLess {
+        bool operator()(const TauKey & a, const TauKey & b) const noexcept {
+            if (a.first < b.first) return true;
+            if (b.first < a.first) return false;
+                // Use std::less for pointers to get a strict total order across unrelated objects
+                return std::less<const void*>()(a.second, b.second);
+        }
+    };
     // Tree index ordered by τ
-    std::map<TauKey, BlockIt> tree_;
+    std::map<TauKey, BlockIt, TauLess> tree_;
 
     // linked list of blocks
     BlockList blocks_;
@@ -66,6 +74,21 @@ private:
 private:
     static ItemIt bfprt_select_(std::vector<ItemIt>& a, std::size_t k);
     static ItemIt bfprt_select_(std::vector<ItemIt>& a, std::size_t l, std::size_t r, std::size_t k);
+
+
+    bool is_sentinel(BlockIt it) const {
+        return it != blocks_.end() && std::next(it) == blocks_.end();
+    }
+
+    // Locate iterator in a block by a stable Node* (no UB on singular iterators).
+    ItemIt find_in_block(BlockIt bIt, const Node * p) {
+        if (bIt == blocks_.end() || p == nullptr) return (bIt == blocks_.end()
+             ? ItemIt{} : bIt->items.end());
+        for (auto it = bIt->items.begin(); it != bIt->items.end(); ++it)
+            if (&*it == p) return it;
+        return bIt->items.end();
+    }
+
 
 };
 
@@ -130,6 +153,7 @@ D1<Key>::split(BlockIt blockIt)
     using ItemItT = typename D1<Key>::ItemIt;
 
     const std::size_t n = blockIt->items.size();
+    if (n < 2) return blockIt;
     const std::size_t k = n / 2; 
     std::vector<ItemItT> a;
     a.reserve(n);
@@ -137,6 +161,9 @@ D1<Key>::split(BlockIt blockIt)
    
     for (auto it = blockIt->items.begin(); it != blockIt->items.end(); ++it)
         a.push_back(it);
+    assert(!a.empty());
+    assert(k < a.size());
+
     ItemItT itK = bfprt_select_(a, k);
     const double pivot = itK->value;
     std::size_t cnt_lt = 0, cnt_eq = 0;
@@ -196,20 +223,21 @@ D1<Key>::insert_block(std::list<Node>&& items, double blockUpper, BlockIt where)
 // Caller must ensure the iterator is valid and not already erased.
 template <class Key>
 void D1<Key>::delete_block(BlockIt it) {
-    if (it == blocks_.end()) return;
+    if (it == blocks_.end() || is_sentinel(it)) return;
     delete_node_in_tree(it->blockUpper, it);
     blocks_.erase(it);
 }
-// Erase a specific node from a block; if the block becomes empty, delete the block
-// (which also removes its tree_ entry). No-op on invalid iterators.
+
+// Erase a specific node by stable pointer; if the block becomes empty, delete it.
+// Returns true if a node was removed, false otherwise. Never dereferences singular iterators.
 template <class Key>
-void D1<Key>::delete_item(BlockIt bIt, ItemIt iIt) {
-    if (bIt == blocks_.end() || iIt == bIt->items.end()) return;
+bool D1<Key>::delete_item(BlockIt bIt, const Node * ptr) {
+    if (bIt == blocks_.end() || ptr == nullptr) return false;
+    auto iIt = find_in_block(bIt, ptr);
+    if (iIt == bIt->items.end()) return false; // not found / not in this block
     bIt->items.erase(iIt);
-    if (bIt->items.empty()) {
-        delete_block(bIt);
-        return;
-    }
+    if (bIt->items.empty() && !is_sentinel(bIt)) delete_block(bIt);
+    return true;
 }
 
 // Index a block in the tree_ under key <blockUpper, address(block)>.
@@ -223,6 +251,7 @@ void D1<Key>::add_node_in_tree(double blockUpper, BlockIt it) {
 // Remove the block's entry from tree_ under key <blockUpper, address(block)> if present.
 template <class Key>
 void D1<Key>::delete_node_in_tree(double blockUpper, BlockIt it) {
+    if (is_sentinel(it)) return;
     TauKey k{ blockUpper, static_cast<const void*>(&(*it)) };
     auto p = tree_.find(k);
     if (p != tree_.end()) tree_.erase(p);
@@ -259,32 +288,39 @@ D1<Key>::pull(std::size_t count)
         }
 
         if (items.empty()) {
-            delete_node_in_tree(bIt->blockUpper, bIt);
-            bIt = blocks_.erase(bIt);
+            const bool is_last = (std::next(bIt) == blocks_.end());
+            if (is_last) {
+                ++bIt;
+            }
+            else {
+                delete_node_in_tree(bIt->blockUpper, bIt);
+                bIt = blocks_.erase(bIt);
+                
+            }
         }
         else {
             ++bIt;
         }
     }
 
-    if (!blocks_.empty()) {
-        for (const auto& blk : blocks_) {
-            if (!blk.items.empty()) {
-                const auto minIt = std::min_element(
-                    blk.items.begin(), blk.items.end(),
-                    [](const Node& a, const Node& b) { return a.value < b.value; }
-                );
-                second_val = minIt->value;  
-                break;
-            }
+    bool found_non_empty = false;
+    for (const auto& blk : blocks_) {
+        if (!blk.items.empty()) {
+            const auto minIt = std::min_element(
+                blk.items.begin(), blk.items.end(),
+                [](const Node& a, const Node& b) { return a.value < b.value; }
+            );
+            second_val = minIt->value;
+            found_non_empty = true;
+            break;
         }
     }
-    else {
-        if (!out.empty()) {
-            auto it = std::max_element(out.begin(), out.end(),
-                [](const Node& a, const Node& b) { return a.value < b.value; });
-            second_val = it->value;
-        }
+    if (!found_non_empty && !out.empty()) {
+        const auto it = std::max_element(
+            out.begin(), out.end(),
+            [](const Node& a, const Node& b) { return a.value < b.value; }
+        );
+        second_val = it->value;
     }
 
     return { std::move(out), second_val };
@@ -298,6 +334,8 @@ D1<Key>::pull(std::size_t count)
 template <class Key>
 typename D1<Key>::ItemIt
 D1<Key>::bfprt_select_(std::vector<ItemIt>& a, std::size_t k) {
+    assert(!a.empty());
+    assert(k < a.size());
     return bfprt_select_(a, 0, a.size(), k);
 }
 
@@ -329,7 +367,6 @@ D1<Key>::bfprt_select_(std::vector<ItemIt>& a,
 
     const ItemIt pivotIt = bfprt_select_(meds, 0, meds.size(), meds.size() / 2);
     const double pivot = keyOf(pivotIt);
-
     
     auto lessEnd = std::partition(a.begin() + l, a.begin() + r,
         [&](const ItemIt& x) { return keyOf(x) < pivot; });

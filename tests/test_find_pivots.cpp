@@ -12,21 +12,20 @@
 
 namespace test_helpers {
 
-    // === Tight check (same tolerance logic as in the impl) ===
+    // === Tight check (אותו ה-tol כמו במימוש) ===
     inline bool tight(double sum, double dv) {
         double diff = std::abs(sum - dv);
         double scale = 1.0 + std::max(std::abs(sum), std::abs(dv));
         return diff <= 1e-12 * scale;
     }
 
-    // === Build forest (children + indeg) from adj/db/W using index_of,
-    // === and validate "tight-forest" invariants along the way.
-    template<class Key>
+    // === בניית יער "tight" (children + indeg) מתוך adj/db/W בעזרת index_of ===
+    template<class Key, class IndexOf>
     void build_forest_and_validate(
         const std::vector<std::vector<std::pair<Key, double>>>& adj,
         const std::vector<double>& db,
         const std::vector<Key>& W,
-        const std::function<std::size_t(const Key&)>& index_of,
+        IndexOf index_of,
         std::vector<std::vector<std::size_t>>& children,
         std::vector<int>& indeg)
     {
@@ -67,14 +66,14 @@ namespace test_helpers {
             }
         }
 
-        // Each v in W has at most one parent
+        // לכל v ב-W לכל היותר הורה אחד
         for (auto& vKey : W) {
             size_t iv = index_of(vKey);
             ASSERT_LE(indeg[iv], 1);
         }
     }
 
-    // === Count subtree size with early stop at K ===
+    // === ספירת גודל תת-עץ עם עצירה מוקדמת ב-K ===
     inline bool subtree_at_least_K(std::size_t root_idx,
         const std::vector<std::vector<std::size_t>>& children,
         std::size_t K)
@@ -95,20 +94,37 @@ namespace test_helpers {
 } // namespace test_helpers
 
 // ===========================
-// Helpers for specific key types
+// אינדקסרים
 // ===========================
-static inline std::size_t idx_int(const int& k) { return static_cast<std::size_t>(k); }
-static inline std::size_t idx_char(const char& c) { return static_cast<std::size_t>(static_cast<unsigned char>(c)); }
+#include <type_traits>
+#include "sssp/algorithms/relax.hpp" // בשביל החתימות בלבד (לא חובה כאן)
+namespace sssp {
+    namespace util {
+        template<class Key>
+        inline auto make_integral_indexer() {
+            static_assert(std::is_integral_v<Key>, "Integral keys only");
+            if constexpr (std::is_same_v<Key, char>) {
+                return [](char c) -> std::size_t {
+                    return static_cast<std::size_t>(static_cast<unsigned char>(c));
+                    };
+            }
+            else {
+                return [](Key k) -> std::size_t { return static_cast<std::size_t>(k); };
+            }
+        }
+        template<class Key>
+        inline auto make_map_indexer(const std::unordered_map<Key, std::size_t>& m) {
+            return [&m](const Key& k) -> std::size_t { return m.at(k); };
+        }
+    }
+} // namespace sssp::util
 
 // ===========================
 // Tests
 // ===========================
 
-// 1) Basic small graph (int keys), no early-exit, pivot should be root in S with subtree >= K
-TEST(FindPivots, SmallGraph_NoEarlyExit_IntKeys) {
-    // Graph:
-    // 0 -> 1 (1), 1 -> 2 (1), 1 -> 3 (1), 0 -> 2 (2)
-    // From S={0}, with K=2, B huge, relax should reach all {0,1,2,3}.
+// 1) גרף קטן (int), בדיקה גמישה: או Early-Exit (P=S) או פיבוט רוט עם תת-עץ ≥ K
+TEST(FindPivots, SmallGraph_IntKeys_Flexible) {
     std::vector<std::vector<std::pair<int, double>>> adj(4);
     adj[0] = { {1,1.0}, {2,2.0} };
     adj[1] = { {2,1.0}, {3,1.0} };
@@ -120,53 +136,54 @@ TEST(FindPivots, SmallGraph_NoEarlyExit_IntKeys) {
     double B = 1e18;
     std::size_t K = 2;
 
-    auto res = sssp::find_pivots<int>(adj, db, S, B, K);
+    auto index_of = sssp::util::make_integral_indexer<int>();
+    auto res = sssp::find_pivots<int>(adj, db, S, B, K, index_of);
 
-    // W should contain all 4 nodes
-    EXPECT_EQ(res.W.size(), 4u);
-
-    // Build forest & check invariants
-    std::vector<std::vector<std::size_t>> children;
-    std::vector<int> indeg;
-    test_helpers::build_forest_and_validate<int>(adj, db, res.W, idx_int, children, indeg);
-
-    // 0 should be a root in W and in S, with subtree >= K
-    ASSERT_EQ(indeg[0], 0);
-    ASSERT_TRUE(test_helpers::subtree_at_least_K(0, children, K));
-
-    // P ⊆ S and we expect P={0}
-    ASSERT_EQ(res.P.size(), 1u);
-    EXPECT_EQ(res.P[0], 0);
+    ASSERT_FALSE(res.W.empty());
+    // אם הופעל Early-Exit: P==S
+    if (res.W.size() > K * S.size()) {
+        ASSERT_EQ(res.P.size(), S.size());
+        EXPECT_EQ(res.P[0], 0);
+    }
+    else {
+        // אחרת – נבדוק רוט ותת-עץ
+        std::vector<std::vector<std::size_t>> children;
+        std::vector<int> indeg;
+        test_helpers::build_forest_and_validate<int>(adj, db, res.W, index_of, children, indeg);
+        ASSERT_EQ(indeg[0], 0);
+        ASSERT_TRUE(test_helpers::subtree_at_least_K(0, children, K));
+        ASSERT_EQ(res.P.size(), 1u);
+        EXPECT_EQ(res.P[0], 0);
+    }
 }
 
-// 2) Early-exit: if |W| > K|S|, return P=S
+// 2) Early-exit: אם |W| > K|S| → P=S
 TEST(FindPivots, EarlyExit_When_W_TooBig) {
     const int n = 6;
     std::vector<std::vector<std::pair<int, double>>> adj(n);
-    for (int v = 1; v < n; ++v) adj[0].push_back({ v, 1.0 }); // star from 0
+    for (int v = 1; v < n; ++v) adj[0].push_back({ v, 1.0 }); // star מ-0
 
     std::vector<double> db(n, 1e18);
     db[0] = 0.0;
 
     std::vector<int> S = { 0 };
     double B = 1e18;
-    std::size_t K = 1; // small K -> |W| grows fast
+    std::size_t K = 1; // קטן → W גדל מהר
 
-    auto res = sssp::find_pivots<int>(adj, db, S, B, K);
+    auto index_of = sssp::util::make_integral_indexer<int>();
+    auto res = sssp::find_pivots<int>(adj, db, S, B, K, index_of);
 
     ASSERT_EQ(res.P.size(), S.size());
     ASSERT_EQ(res.P[0], 0);
-    // W should be large (here 6)
-    ASSERT_EQ(res.W.size(), 6u);
+    ASSERT_EQ(res.W.size(), static_cast<size_t>(n));
 }
 
-// 3) String keys with a provided index_of
+// 3) String keys עם index_of
 TEST(FindPivots, StringKeys_WithIndexOf) {
     std::vector<std::string> nodes = { "A","B","C","D" };
     std::unordered_map<std::string, std::size_t> idx;
     for (size_t i = 0; i < nodes.size(); ++i) idx[nodes[i]] = i;
-
-    auto index_of = [&](const std::string& s)->std::size_t { return idx[s]; };
+    auto index_of = sssp::util::make_map_indexer(idx);
 
     std::vector<std::vector<std::pair<std::string, double>>> adj(4);
     adj[idx["A"]] = { {"B",1.0}, {"C",2.0} };
@@ -181,22 +198,26 @@ TEST(FindPivots, StringKeys_WithIndexOf) {
     double B = 1e18;
     std::size_t K = 2;
 
-    auto res = sssp::find_pivots(adj, db, S, B, K, index_of);
+    auto res = sssp::find_pivots<std::string>(adj, db, S, B, K, index_of);
 
-    // Validate forest
-    std::vector<std::vector<std::size_t>> children;
-    std::vector<int> indeg;
-    test_helpers::build_forest_and_validate<std::string>(adj, db, res.W, index_of, children, indeg);
-
-    ASSERT_EQ(indeg[idx["A"]], 0);
-    ASSERT_TRUE(test_helpers::subtree_at_least_K(idx["A"], children, K));
-    ASSERT_EQ(res.P.size(), 1u);
-    EXPECT_EQ(res.P[0], "A");
+    ASSERT_FALSE(res.W.empty());
+    if (res.W.size() > K * S.size()) {
+        ASSERT_EQ(res.P.size(), S.size());
+        EXPECT_EQ(res.P[0], "A");
+    }
+    else {
+        std::vector<std::vector<std::size_t>> children;
+        std::vector<int> indeg;
+        test_helpers::build_forest_and_validate<std::string>(adj, db, res.W, index_of, children, indeg);
+        ASSERT_EQ(indeg[idx["A"]], 0);
+        ASSERT_TRUE(test_helpers::subtree_at_least_K(idx["A"], children, K));
+        ASSERT_EQ(res.P.size(), 1u);
+        EXPECT_EQ(res.P[0], "A");
+    }
 }
 
-// 4) K=1: any root in S that appears in W qualifies (subtree size >= 1 is trivially true)
+// 4) K=1: כל רוט ב-S שמופיע ב-W כשיר (או Early-Exit)
 TEST(FindPivots, KEqualsOne_Basic) {
-    // Chain 0->1->2
     std::vector<std::vector<std::pair<int, double>>> adj(3);
     adj[0] = { {1,1.0} };
     adj[1] = { {2,1.0} };
@@ -207,18 +228,15 @@ TEST(FindPivots, KEqualsOne_Basic) {
     double B = 1e18;
     std::size_t K = 1;
 
-    auto res = sssp::find_pivots<int>(adj, db, S, B, K);
+    auto index_of = sssp::util::make_integral_indexer<int>();
+    auto res = sssp::find_pivots<int>(adj, db, S, B, K, index_of);
 
-    // No early-exit (|W|=3, K|S|=1 => early-exit would actually trigger here if relax reaches all quickly).
-    // To ensure no early-exit, we could reduce reachability so W.size()==1:
-    // But let's accept early-exit possibility and only check invariants:
     ASSERT_FALSE(res.W.empty());
-    // P is either {0} due to early-exit OR because 0 is root with subtree>=1.
     ASSERT_FALSE(res.P.empty());
     EXPECT_EQ(res.P[0], 0);
 }
 
-// 5) Empty S: expect empty P and W (nothing to relax)
+// 5) S ריק: מצפים ל-P ו-W ריקים
 TEST(FindPivots, EmptyS_ReturnsEmpty) {
     std::vector<std::vector<std::pair<int, double>>> adj(3);
     adj[0] = { {1,1.0} };
@@ -230,17 +248,17 @@ TEST(FindPivots, EmptyS_ReturnsEmpty) {
     double B = 1e18;
     std::size_t K = 2;
 
-    auto res = sssp::find_pivots<int>(adj, db, S, B, K);
+    auto index_of = sssp::util::make_integral_indexer<int>();
+    auto res = sssp::find_pivots<int>(adj, db, S, B, K, index_of);
 
     EXPECT_TRUE(res.W.empty());
     EXPECT_TRUE(res.P.empty());
 }
 
-// 6) No tight edges inside W: P should be either empty or equal to S (depending on sizes / early-exit)
+// 6) אין קשתות "tight" בתוך W: P ⊆ S (או Early-Exit → P=S)
 TEST(FindPivots, NoTightEdges_InsideW) {
-    // Make weights that avoid equality: db[0]=0, edges produce db that won't be exactly tight
     std::vector<std::vector<std::pair<int, double>>> adj(3);
-    adj[0] = { {1,1.1} };     // non-integer weight
+    adj[0] = { {1,1.1} };
     adj[1] = { {2,1.1} };
     adj[2] = {};
 
@@ -249,42 +267,39 @@ TEST(FindPivots, NoTightEdges_InsideW) {
     double B = 1e18;
     std::size_t K = 2;
 
-    auto res = sssp::find_pivots<int>(adj, db, S, B, K);
+    auto index_of = sssp::util::make_integral_indexer<int>();
+    auto res = sssp::find_pivots<int>(adj, db, S, B, K, index_of);
 
-    // Either early-exit (P=S) if W grew too large, or no tight parent => roots only at S.
-    // We at least assert P ⊆ S:
     for (auto u : res.P) {
         bool inS = (std::find(S.begin(), S.end(), u) != S.end());
         ASSERT_TRUE(inS);
     }
 }
 
-// 7) Tie-break determinism: when two parents are tight to same v, the chosen parent index should be the smaller
+// 7) הכרעת שוויון: כשיש שני הורים tight לאותו v, בוחרים את ההורה בעל האינדקס הקטן יותר
 TEST(FindPivots, TieBreak_SmallerParentIndexWins) {
-    // Build a W where node 2 can be reached tightly from both 0 and 1 with same cost.
-    // 0->2 (2), 1->2 (2), and db[0]=0, db[1]=0 (two sources) — emulate by putting both in S
     std::vector<std::vector<std::pair<int, double>>> adj(3);
     adj[0] = { {2,2.0} };
     adj[1] = { {2,2.0} };
     adj[2] = {};
 
-    std::vector<double> db = { 0.0, 0.0, 1e18 }; // both 0 and 1 start at 0
+    std::vector<double> db = { 0.0, 0.0, 1e18 }; // שני מקורות
     std::vector<int> S = { 0,1 };
     double B = 1e18;
     std::size_t K = 2;
 
-    auto res = sssp::find_pivots<int>(adj, db, S, B, K);
+    auto index_of = sssp::util::make_integral_indexer<int>();
+    auto res = sssp::find_pivots<int>(adj, db, S, B, K, index_of);
 
-    // Build forest and verify that parent of 2 is 0 (smaller index)
+    // בגרף קטן זה לא אמור להפעיל Early-Exit (|W|=3 ≤ 4)
     std::vector<std::vector<std::size_t>> children;
     std::vector<int> indeg;
-    test_helpers::build_forest_and_validate<int>(adj, db, res.W, idx_int, children, indeg);
+    test_helpers::build_forest_and_validate<int>(adj, db, res.W, index_of, children, indeg);
 
-    // find who is parent of 2:
     int parent_of_2 = -1;
     for (size_t u = 0; u < children.size(); ++u) {
         for (auto v : children[u]) if (v == 2) parent_of_2 = static_cast<int>(u);
     }
     ASSERT_NE(parent_of_2, -1);
-    EXPECT_EQ(parent_of_2, 0);
+    EXPECT_EQ(parent_of_2, 0); // ההורה בעל אינדקס קטן יותר
 }

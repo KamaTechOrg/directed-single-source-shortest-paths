@@ -6,11 +6,10 @@
 #include <cassert>
 
 
-#include "src/lib/internal/ds_common.hpp" 
-
-template <class Key> class D0;
-template <class Key> class D1;
-template <class Key> class Hash;
+#include "ds_common.hpp"
+#include "d0.hpp"
+#include "d1.hpp"
+#include "hash.hpp"
 
 template <class Key>
 class DualBlockStructure {
