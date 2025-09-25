@@ -174,6 +174,36 @@ gtest_discover_tests(test_dual_block_flow)
 
 
 
+# =========================================
+# bmssp vs dijkstra tests
+# =========================================
+add_executable(test_bmssp_vs_dijkstra
+  ${CMAKE_SOURCE_DIR}/tests/test_bmssp_vs_dijkstra.cpp
+  # אם המימוש של BMSSP נמצא בקובץ cpp נפרד – צרפי אותו כאן:
+  # ${CMAKE_SOURCE_DIR}/src/lib/algorithms/bmssp.cpp
+)
+
+target_include_directories(test_bmssp_vs_dijkstra PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src/lib/internal
+  ${CMAKE_SOURCE_DIR}/src/lib
+  ${lemon_SOURCE_DIR}
+  ${lemon_BINARY_DIR}
+)
+
+target_sources(test_bmssp_vs_dijkstra PRIVATE
+  ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp
+)
+
+target_compile_features(test_bmssp_vs_dijkstra PRIVATE cxx_std_17)
+
+target_link_libraries(test_bmssp_vs_dijkstra PRIVATE
+  gtest_main
+  lemon
+)
+
+gtest_discover_tests(test_bmssp_vs_dijkstra)
+
 
 # include(GoogleTest)
 # gtest_discover_tests(test_d1
