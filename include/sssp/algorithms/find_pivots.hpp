@@ -6,14 +6,10 @@
 #include <algorithm>
 
 #include "sssp/algorithms/relax.hpp"
+#include "sssp/algorithms/types.hpp"
 
 namespace sssp {
 
-    template<class Key>
-    struct PivotsResult {
-        std::vector<Key> P;
-        std::vector<Key> W;
-    };
 
     namespace detail {
         inline bool tight(double sum, double dv) {
