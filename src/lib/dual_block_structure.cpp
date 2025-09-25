@@ -31,12 +31,29 @@ void DualBlockStructure<Key>::initialize(std::size_t maxBlockSize, std::size_t g
 }
 
 template <class Key>
+DualBlockStructure<Key>::DualBlockStructure() noexcept
+    : maxBlockSize_(1)              // minimal valid block size
+    , globalUpperBound_(0)          // any value; D1 gets 0.0 below
+    , d0_(1)
+    , d1_(1, 0.0)
+    , hash_(0)
+{
+    // no assert here; default is a minimal valid state
+}
+
+template <class Key>
+bool DualBlockStructure<Key>::empty() const noexcept {
+    return d0_.empty() && d1_.empty();
+}
+
+
+template <class Key>
 void DualBlockStructure<Key>::batch_prepend(NodeList&& items) {
     d0_.batchPrepend(std::move(items));
 }
 
 template <class Key>
-std::pair<typename DualBlockStructure<Key>::NodeList, double>
+std::pair<std::vector<Key>, double>
 DualBlockStructure<Key>::pull() {
     NodeList out;
 
@@ -51,13 +68,20 @@ DualBlockStructure<Key>::pull() {
 
         auto [from_d1, d1_second] = d1_.pull(remaining);
         out.splice(out.end(), from_d1);
-        bound = d1_second; 
+        bound = d1_second;
     }
     else {
         bound = d0_second;
     }
 
-    return { std::move(out), bound };
+    // convert NodeList -> vector<Key>
+    std::vector<Key> keys;
+    keys.reserve(out.size());
+    for (auto& node : out) {
+        keys.push_back(node.key);
+    }
+
+    return { std::move(keys), bound };
 }
 
 template <class Key>

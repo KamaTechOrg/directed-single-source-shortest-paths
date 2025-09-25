@@ -21,12 +21,15 @@ public:
     DualBlockStructure(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
     void initialize(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
 
+    DualBlockStructure() noexcept;
+    bool empty() const noexcept;
+
     std::size_t maxBlockSize() const noexcept { return maxBlockSize_; }
     std::size_t globalUpperBound() const noexcept { return globalUpperBound_; }
 
     void batch_prepend(NodeList&& items);
 
-    std::pair<NodeList, double> pull();
+    std::pair<std::vector<Key>, double> pull();
 
     bool insert(const Key& key, double value);
 
