@@ -92,3 +92,15 @@
 #       - name: Test (Windows)
 #         if: runner.os == 'Windows'
 #         run: ctest --test-dir build -C Release --output-on-failure
+
+
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    # התאמה ללייבלים שמ
