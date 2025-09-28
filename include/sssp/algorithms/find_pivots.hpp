@@ -7,7 +7,6 @@
 
 #include "sssp/algorithms/relax.hpp"
 #include "sssp/algorithms/types.hpp"
-
 namespace sssp {
 
 

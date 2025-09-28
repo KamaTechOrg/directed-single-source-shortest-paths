@@ -5,10 +5,11 @@
 #include <algorithm>
 #include <limits>
 #include <type_traits>
-
 #include "sssp/algorithms/types.hpp"        
 #include "sssp/algorithms/find_pivots.hpp"  
-#include "sssp/dual_block_structure.hpp"    
+#include "sssp/dual_block_structure.hpp"   
+ #include "sssp/algorithms/base_case.hpp"
+
 
 
 
@@ -31,7 +32,7 @@ namespace sssp {
 
         // בסיס (placeholder):  BaseCase אמיתי כשיהיה מוכן
         if (l == 0) {
-            return BMSSPResult<Key>{ B, {} };
+            return base_case<Key>(B, S, adj, db, index_of, Ksz);
         }
 
         // 4: FindPivots

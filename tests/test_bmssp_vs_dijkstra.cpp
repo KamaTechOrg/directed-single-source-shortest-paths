@@ -1,5 +1,4 @@
 ﻿// tests/test_bmssp_vs_dijkstra.cpp
-#include <gtest/gtest.h>
 
 #include <lemon/list_graph.h>
 #include <lemon/dijkstra.h>
