@@ -103,4 +103,23 @@ on:
 
 jobs:
   build-and-test:
-    # התאמה ללייבלים שמ
+    # מספיק "self-hosted" כדי שיתאים לכל self-hosted זמין
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential cmake ninja-build gcc g++ clang
+
+      - name: Configure (Release)
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
