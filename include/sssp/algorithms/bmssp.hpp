@@ -23,8 +23,8 @@ namespace sssp {
         const AdjList<Key>& adj,
         std::vector<double>& db,
         IndexOf index_of,
-        std::size_t M,      // אמור להיות 2^{(l-1)*t}; אם t>1 
-        std::size_t Ksz     // k בפרמטרי המאמר
+        std::size_t M,      
+        std::size_t Ksz    
     ) {
         static_assert(std::is_invocable_r_v<std::size_t, IndexOf, Key>,
             "index_of must be callable as size_t(Key)");
@@ -73,9 +73,8 @@ namespace sssp {
             auto [Si, Bi] = D.pull();   
 
             // 11: (B'i, Ui) ← BMSSP(l−1, Bi, Si)
-            // טיפ קטן: אם M מחושב לפי 2^{(l-1)*t}, אז ברקורסיה M' צריך להיות 2^{(l-2)*t}
             auto sub = bmssp<Key>(l - 1, Bi, Si, adj, db, index_of,
-                /*M'*/ std::max<std::size_t>(1, M / 2),  // אם t>1 –  מדויק
+                /*M'*/ std::max<std::size_t>(1, M / 2), 
                 Ksz);
 
             const double Bi_prime = sub.Bprime;
@@ -153,11 +152,11 @@ namespace sssp {
             }
 
 
-            // עדכון B'0
+            //  B'0
             B0_prime = std::min(B0_prime, Bi_prime);
         }
 
-        // 22: החזרה – B' = min{B'i, B} ו-U ← U ∪ { x∈W : d̂[x] < B' }
+        // 22:  – B' = min{B'i, B} ו-U ← U ∪ { x∈W : d̂[x] < B' }
         const double Bprime = std::min(B0_prime, B);
         for (const Key& x : W) {
             if (db[index_of(x)] < Bprime) U.push_back(x);
