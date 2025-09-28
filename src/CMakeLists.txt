@@ -15,7 +15,11 @@ target_include_directories(SSSP PRIVATE
   ${CMAKE_SOURCE_DIR}/include 
   ${CMAKE_CURRENT_SOURCE_DIR}/lib
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/internal
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon
 )
+
+target_link_libraries(SSSP PRIVATE rbconv)
+
 
 if (TARGET lemon)
   target_include_directories(SSSP PRIVATE

@@ -20,9 +20,9 @@ FetchContent_Declare(lemon
 )
 FetchContent_MakeAvailable(lemon)
 
-add_subdirectory(src)
-
 add_subdirectory(tools/rb2lemon)
+
+add_subdirectory(src)
 
 enable_testing()
 set(CTEST_OUTPUT_ON_FAILURE ON)
