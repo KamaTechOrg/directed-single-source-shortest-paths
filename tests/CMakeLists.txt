@@ -205,6 +205,35 @@ target_link_libraries(test_bmssp_vs_dijkstra PRIVATE
 gtest_discover_tests(test_bmssp_vs_dijkstra)
 
 
+# =========================================
+# correctness tests: BMSSP == Dijkstra
+# =========================================
+add_executable(test_correctness_bmssp
+  ${CMAKE_SOURCE_DIR}/tests/test_correctness_bmssp.cpp
+  # אם BMSSP/ה-D-structure לא header-only אצלך, צרפי גם את ה־cpp הרלוונטיים:
+  ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp
+)
+
+target_include_directories(test_correctness_bmssp PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src/lib/internal
+  ${CMAKE_SOURCE_DIR}/src/lib
+  ${lemon_SOURCE_DIR}
+  ${lemon_BINARY_DIR}
+)
+
+target_compile_features(test_correctness_bmssp PRIVATE cxx_std_17)
+
+target_link_libraries(test_correctness_bmssp PRIVATE
+  gtest_main
+  lemon
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_correctness_bmssp)
+
+
+
 # include(GoogleTest)
 # gtest_discover_tests(test_d1
 #   DISCOVERY_TIMEOUT 60
