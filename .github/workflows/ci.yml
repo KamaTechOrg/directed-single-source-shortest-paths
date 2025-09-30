@@ -95,16 +95,90 @@
 
 
 
-name: CI
-on: [push, pull_request]
+name: CI (tests only)
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 60
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Configure (Release)
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Python for pip (user install)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Ensure user pip only (no cmake)
+        run: |
+          python3 -m pip uninstall -y cmake || true
+          python3 -m pip install --user --upgrade pip
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Show toolchain
+        run: |
+          which cmake || true; cmake --version || true
+          which ninja || true; ninja --version || true
+          which gcc || true; gcc --version || true
+          which clang || true; clang --version || true
+
+      - name: Configure (Linux)
+        env:
+          CC: gcc
+          CXX: g++
+        run: |
+          mkdir -p build
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DDOWNLOAD_EXTRACT_TIMESTAMP=TRUE \
+            -DBUILD_TESTING=ON \
+          | tee build/configure.log
+
       - name: Build
-        run: cmake --build build -j"$(nproc)"
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: cmake --build build --config Release -- -k 0 | tee build/build.log
+      - name: List tests (no run)
+        run: |
+          ctest --test-dir build -N | tee build/ctest-discover.log
+          tests=$(ctest --test-dir build -N | awk '/Total Tests:/ {print $3}')
+          if [ -z "$tests" ] || [ "$tests" -eq 0 ]; then
+            echo "No tests discovered. Failing the build."
+            exit 1
+          fi
+      - name: Test (ctest)
+        run: ctest --test-dir build -C Release --output-on-failure --no-tests=error | tee build/ctest.log
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-linux-self-hosted
+          path: |
+            build/Testing/**/*.xml
+            build/CMakeFiles/CMakeOutput.log
+            build/CMakeFiles/CMakeError.log
+            build/configure.log
+            build/build.log
+            build/ctest-discover.log
+            build/ctest.log
+          if-no-files-found: ignore
