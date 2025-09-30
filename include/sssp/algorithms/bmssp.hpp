@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <limits>
 #include <type_traits>
-
 #include "sssp/algorithms/types.hpp"        
 #include "sssp/algorithms/find_pivots.hpp"  
 #include "sssp/dual_block_structure.hpp"    

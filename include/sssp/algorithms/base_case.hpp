@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// sssp/algorithms/base_case.hpp
+#pragma once
 #include <vector>
 #include <queue>
 #include <utility>
@@ -46,6 +47,8 @@ namespace sssp {
 		// initialize heap with ?x, db[x]?
 		H.emplace(db[ix], x);
 
+		// ��� ���� �� ������ ������� (DecreaseKey ���� ��� �����),
+		// ����� ��� ������ ���� ������ �-db.
 		while (!H.empty() && U0.size() < k + 1) {
 			const auto [du, u] = H.top(); H.pop();
 			const std::size_t iu = index_of(u);
@@ -68,8 +71,9 @@ namespace sssp {
 				// if db[u] + wuv ? db[v] and db[u] + wuv < B
 				if (cand < db[iv] && cand < B) {
 					if (cand < db[iv]) {
-						db[iv] = cand;
+						db[iv] = cand; 
 					}
+					// Insert / DecreaseKey: ������ ����� ����. ����� ������ ������.
 					H.emplace(db[iv], v);
 				}
 			}
