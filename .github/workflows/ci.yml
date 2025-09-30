@@ -121,7 +121,6 @@ jobs:
         with:
           submodules: recursive
 
-      # Python for pip (user install)
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -130,43 +129,71 @@ jobs:
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@v5
 
+      # (Optional) ccache + cache
+      - name: Install ccache
+        run: |
+          set -eo pipefail
+          which ccache || sudo apt-get update && sudo apt-get install -y ccache
+          ccache --version || true
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.hpp', '**/*.h', '**/*.cpp') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
       - name: Ensure user pip only (no cmake)
         run: |
+          set -eo pipefail
           python3 -m pip uninstall -y cmake || true
           python3 -m pip install --user --upgrade pip
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Show toolchain
         run: |
+          set -eo pipefail
           which cmake || true; cmake --version || true
           which ninja || true; ninja --version || true
           which gcc || true; gcc --version || true
           which clang || true; clang --version || true
+          which ccache || true; ccache --version || true
 
       - name: Configure (Linux)
         env:
           CC: gcc
           CXX: g++
         run: |
+          set -eo pipefail
           mkdir -p build
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DDOWNLOAD_EXTRACT_TIMESTAMP=TRUE \
             -DBUILD_TESTING=ON \
-          | tee build/configure.log
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache | tee build/configure.log
+          test ${PIPESTATUS[0]} -eq 0
 
       - name: Build
-        run: cmake --build build --config Release -- -k 0 | tee build/build.log
+        run: |
+          set -eo pipefail
+          cmake --build build --config Release -- -k 0 | tee build/build.log
+          test ${PIPESTATUS[0]} -eq 0
+
       - name: List tests (no run)
         run: |
+          set -eo pipefail
           ctest --test-dir build -N | tee build/ctest-discover.log
           tests=$(ctest --test-dir build -N | awk '/Total Tests:/ {print $3}')
           if [ -z "$tests" ] || [ "$tests" -eq 0 ]; then
             echo "No tests discovered. Failing the build."
             exit 1
           fi
+
       - name: Test (ctest)
-        run: ctest --test-dir build -C Release --output-on-failure --no-tests=error | tee build/ctest.log
+        run: |
+          set -eo pipefail
+          ctest --test-dir build -C Release --output-on-failure --no-tests=error | tee build/ctest.log
+          test ${PIPESTATUS[0]} -eq 0
 
       - name: Upload logs
         if: always()
