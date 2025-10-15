@@ -181,6 +181,7 @@ target_include_directories(test_correctness_bmssp PRIVATE
   ${lemon_SOURCE_DIR}
   ${lemon_BINARY_DIR}
 )
+endif() 
 
 target_compile_features(test_correctness_bmssp PRIVATE cxx_std_17)
 
