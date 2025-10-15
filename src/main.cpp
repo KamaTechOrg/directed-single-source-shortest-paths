@@ -216,15 +216,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
 // src/main.cpp
 #include <iostream>
 #include <string>
@@ -346,7 +337,8 @@ inline std::vector<double> run_lemon_dijkstra_on_lgf(
 int main() {
     try {
         // === נתיב מוחלט לקובץ ה-RB (כפי שמופיע אצלך) ===
-        const std::string rb_path = "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\EAT_RS.rb";
+        //const std::string rb_path = "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\EAT_RS.rb";
+        const std::string rb_path = "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\patents_main.rb";
         const int source = 0;
 
         std::cout << "Input RB file : " << rb_path << "\n";
