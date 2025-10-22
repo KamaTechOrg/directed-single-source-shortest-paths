@@ -1,5 +1,6 @@
 ﻿// tests/test_base_case.cpp
 #include <gtest/gtest.h>
+#include <cmath> 
 #include <limits>
 #include <vector>
 #include <algorithm>
