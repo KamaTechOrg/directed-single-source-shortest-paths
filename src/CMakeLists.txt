@@ -10,7 +10,7 @@ target_include_directories(SSSP PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/lib
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/internal
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
-  ${lemon_SOURCE_DIR}           # <<< זה מספיק. פה יושבת התיקיה "lemon/"
+  ${lemon_SOURCE_DIR}     
 )
 
 
