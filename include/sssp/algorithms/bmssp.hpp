@@ -21,21 +21,22 @@ namespace sssp {
         const std::vector<Key>& S,
         const AdjList<Key>& adj,
         std::vector<double>& db,
-        IndexOf index_of,
+        IndexOf vertex_index_fn,
         std::size_t M,      
         std::size_t Ksz    
     ) {
-        static_assert(std::is_invocable_r_v<std::size_t, IndexOf, Key>,
-            "index_of must be callable as size_t(Key)");
 
-        // בסיס (placeholder):  BaseCase אמיתי כשיהיה מוכן
+        static_assert(std::is_invocable_r_v<std::size_t, IndexOf, Key>,
+            "vertex_index_fn must be callable as size_t(Key)");
+
+
         if (l == 0) {
             //return BMSSPResult<Key>{ B, {} };
-            return base_case<Key>(B, S, adj, db, index_of, Ksz);
+            return base_case<Key>(B, S, adj, db, vertex_index_fn, Ksz);
         }
 
         // 4: FindPivots
-        auto pw = find_pivots<Key>(adj, db, S, B, Ksz, index_of);
+        auto pw = find_pivots<Key>(adj, db, S, B, Ksz, vertex_index_fn);
         const auto& P = pw.P;
         const auto& W = pw.W;
 
@@ -45,24 +46,21 @@ namespace sssp {
 
         // 6: Insert ⟨x, d̂[x]⟩ for x ∈ P
         for (const Key& x : P) {
-            D.insert(x, db[index_of(x)]); 
+            D.insert(x, db[vertex_index_fn(x)]);
         }
 
-        // 7: i←0; B'0 ← min_{x∈P} d̂[x]; U←∅ (או B אם P ריק)
         int i = 0;
         double B0_prime = B;
         if (!P.empty()) {
             auto it = std::min_element(
                 P.begin(), P.end(),
                 [&](const Key& a, const Key& b) {
-                    return db[index_of(a)] < db[index_of(b)];
+                    return db[vertex_index_fn(a)] < db[vertex_index_fn(b)];
                 });
-            B0_prime = db[index_of(*it)];
+            B0_prime = db[vertex_index_fn(*it)];
         }
         std::vector<Key> U;
 
-        // 8: while |U| < k^{2ℓt} && D לא ריק
-        // כרגע placeholder: Ksz*Ksz. אם יש לך t, חשבי k^(2*l*t)
         const std::size_t U_limit = Ksz * Ksz;
 
         while (U.size() < U_limit && !D.empty()) {
@@ -73,7 +71,7 @@ namespace sssp {
             auto [Si, Bi] = D.pull();   
 
             // 11: (B'i, Ui) ← BMSSP(l−1, Bi, Si)
-            auto sub = bmssp<Key>(l - 1, Bi, Si, adj, db, index_of,
+            auto sub = bmssp<Key>(l - 1, Bi, Si, adj, db, vertex_index_fn,
                 /*M'*/ std::max<std::size_t>(1, M / 2), 
                 Ksz);
 
@@ -95,9 +93,9 @@ namespace sssp {
             // - If db[v] ∈ [Bi, B): push into D
             // - If db[v] ∈ [B'i, Bi): push into Kbatch (dedup with inK)
             for (const Key& u : Ui) {
-                const std::size_t ui = index_of(u);
+                const std::size_t ui = vertex_index_fn(u);
                 for (const auto& [v, wuv] : adj[ui]) {
-                    const std::size_t vi = index_of(v);
+                    const std::size_t vi = vertex_index_fn(v);
                     const double cand = db[ui] + wuv;
 
                     if (cand <= db[vi]) {
@@ -122,7 +120,7 @@ namespace sssp {
             // 21: BatchPrepend( K ∪ { <x, d̂[x]> : x ∈ S, d̂[x] ∈ [B'i, Bi) } )
             // Also add from S into K (avoid duplicates using the same marker).
             for (const Key& x : S) {
-                const std::size_t xi = index_of(x);
+                const std::size_t xi = vertex_index_fn(x);
                 const double dx = db[xi];
                 if (dx >= Bi_prime && dx < Bi) {
                     if (!inK[xi]) {
@@ -159,13 +157,13 @@ namespace sssp {
         // 22:  – B' = min{B'i, B} ו-U ← U ∪ { x∈W : d̂[x] < B' }
         const double Bprime = std::min(B0_prime, B);
         for (const Key& x : W) {
-            if (db[index_of(x)] < Bprime) U.push_back(x);
+            if (db[vertex_index_fn(x)] < Bprime) U.push_back(x);
         }
 
         std::sort(U.begin(), U.end(),
-            [&](const Key& a, const Key& b) { return index_of(a) < index_of(b); });
+            [&](const Key& a, const Key& b) { return vertex_index_fn(a) < vertex_index_fn(b); });
         U.erase(std::unique(U.begin(), U.end(),
-            [&](const Key& a, const Key& b) { return index_of(a) == index_of(b); }),
+            [&](const Key& a, const Key& b) { return vertex_index_fn(a) == vertex_index_fn(b); }),
             U.end());
 
         return BMSSPResult<Key>{ Bprime, std::move(U) };

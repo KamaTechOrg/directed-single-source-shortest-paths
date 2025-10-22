@@ -8,5 +8,3 @@ static void BM_Dummy(benchmark::State& state) {
     }
 }
 BENCHMARK(BM_Dummy);
-
-// שימי לב: אין BENCHMARK_MAIN() כי קישרנו ל benchmark_main בספריות

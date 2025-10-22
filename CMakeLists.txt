@@ -8,16 +8,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 
-# === LEMON ===
+
 set(LEMON_ENABLE_GLPK   OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CPLEX  OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CLP    OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CBC    OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_SOPLEX OFF CACHE BOOL "" FORCE)
 
-#FetchContent_Declare(lemon
-#  URL https://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.zip
-#)
+
 
 FetchContent_Declare(lemon
   GIT_REPOSITORY https://github.com/alex-176/lemon.git
@@ -29,7 +27,7 @@ FetchContent_MakeAvailable(lemon)
 
 
 
-# === Google Benchmark options: לכבות דמו/טסטים ===
+
 include(FetchContent)
 set(BENCHMARK_ENABLE_TESTING        OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS    OFF CACHE BOOL "" FORCE)

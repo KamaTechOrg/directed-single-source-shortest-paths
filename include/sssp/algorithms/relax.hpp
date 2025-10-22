@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cassert>
 #include <algorithm>
+#include <stdexcept>
 
 namespace sssp {
 
@@ -13,19 +14,19 @@ namespace sssp {
         std::vector<Key> decreased_keys;
     };
 
-    // פונקציה אחת בלבד: תמיד עם index_of (פונקציה/פונקטור Key->size_t)
     template<class Key, class IndexOf>
     inline RelaxResult<Key> relax_k_steps(
         const std::vector<std::vector<std::pair<Key, double>>>& adj,
         std::vector<double>& db,
-        std::vector<Key> S,
+       /* std::vector<Key> S,*/
+        std::vector<Key>& S,
         double B,
         std::size_t K,
-        IndexOf index_of)
+        IndexOf vertex_index_fn)
     {
         const std::size_t n = adj.size();
         assert(db.size() == n && "db.size() must equal adj.size()");
-
+        if (db.size() != n) throw std::invalid_argument("db.size() must equal adj.size()");
         RelaxResult<Key> out;
         out.W_union.reserve(n);
 
@@ -33,29 +34,25 @@ namespace sssp {
         std::vector<char> decMarked(n, 0);
 
         auto push_union = [&](const Key& vKey) {
-            std::size_t iv = index_of(vKey);
+            std::size_t iv = vertex_index_fn(vKey);
             if (!inW[iv]) { inW[iv] = 1; out.W_union.push_back(vKey); }
             };
 
         // W0 = S
         for (const Key& u : S) push_union(u);
-
-        std::vector<Key> Wi_prev = std::move(S);
+        std::vector<Key> Wi_prev = S;
+       /* std::vector<Key> Wi_prev = std::move(S);*/
         std::vector<Key> Wi; Wi.reserve(256);
-
+        std::vector<char> inWi(n, 0);
         for (std::size_t step = 1; step <= K; ++step) {
             Wi.clear();
-            std::vector<char> inWi(n, 0);
+            std::fill(inWi.begin(), inWi.end(), 0); 
 
             for (const Key& uKey : Wi_prev) {
-                const std::size_t iu = index_of(uKey);
+                const std::size_t iu = vertex_index_fn(uKey);
                 const double du = db[iu];
-
-                for (const auto& edge : adj[iu]) {
-                    const Key& vKey = edge.first;
-                    const double wuv = edge.second;
-
-                    const std::size_t iv = index_of(vKey);
+                for (const auto& [vKey, wuv] : adj[iu]) {
+                    const std::size_t iv = vertex_index_fn(vKey);
                     const double cand = du + wuv;
 
                     if (cand <= db[iv]) {

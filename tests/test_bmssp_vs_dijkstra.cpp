@@ -1,4 +1,5 @@
 ﻿// tests/test_bmssp_vs_dijkstra.cpp
+#include <gtest/gtest.h>
 
 #include <lemon/list_graph.h>
 #include <lemon/dijkstra.h>
@@ -83,7 +84,7 @@ static void expect_close(const std::vector<double>& a,
     }
 }
 
-// ======= טסט 1: גרף קטן דטרמיניסטי =======
+
 TEST(BMSSP_vs_Dijkstra, SmallTriangleSameGraph) {
     // 0->1 (1), 1->2 (1), 0->2 (3.5)
     Adj adj(3);

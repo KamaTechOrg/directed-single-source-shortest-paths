@@ -21,7 +21,7 @@ public:
     DualBlockStructure(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
     void initialize(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
 
-    DualBlockStructure() noexcept;
+    DualBlockStructure();
     bool empty() const noexcept;
 
     std::size_t maxBlockSize() const noexcept { return maxBlockSize_; }

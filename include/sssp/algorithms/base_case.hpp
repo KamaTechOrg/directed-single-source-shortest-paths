@@ -7,25 +7,32 @@
 #include <functional>
 #include <cassert>
 #include "sssp/algorithms/types.hpp"
+#include <stdexcept>
+
 
 namespace sssp {
 	template<class Key, class IndexOf>
-	inline BMSSPResult<Key> base_case(
+	 BMSSPResult<Key> base_case(
 		double B,
 		const std::vector<Key>& S,
 		const AdjList<Key>& adj,
 		std::vector<double>& db,
-		IndexOf index_of,
+		IndexOf vertex_index_fn,
 		std::size_t k
 	) {
 		assert(S.size() == 1 && "BaseCase requires S to be a singleton");
+		if (S.size() != 1)
+			throw std::invalid_argument("BaseCase requires S to be a singleton");
 		assert(k > 0 && "k must be positive");
+		if (k == 0)
+			 throw std::invalid_argument("k must be positive");
 
 		const std::size_t n = adj.size();
 		assert(db.size() == n && "db.size() must equal adj.size()");
-
+		if (db.size() != n)
+			 throw std::invalid_argument("db.size() must equal adj.size()");
 		const Key x = S.front(); 
-		const std::size_t ix = index_of(x); 
+		const std::size_t ix =vertex_index_fn(x);
 
 		// U0 ? S
 		std::vector<Key> U0;
@@ -46,12 +53,9 @@ namespace sssp {
 
 		// initialize heap with ?x, db[x]?
 		H.emplace(db[ix], x);
-
-		// ��� ���� �� ������ ������� (DecreaseKey ���� ��� �����),
-		// ����� ��� ������ ���� ������ �-db.
 		while (!H.empty() && U0.size() < k + 1) {
 			const auto [du, u] = H.top(); H.pop();
-			const std::size_t iu = index_of(u);
+			const std::size_t iu = vertex_index_fn(u);
 			if (du != db[iu]) continue;
 
 			// U0 ? U0 ? {u}
@@ -61,11 +65,8 @@ namespace sssp {
 			}
 
 			// for each edge (u,v):
-			for (const auto& e : adj[iu]) {
-				const Key& v = e.first;
-				const double wuv = e.second;
-				const std::size_t iv = index_of(v);
-
+			for (const auto& [v, wuv] : adj[iu]) {
+				const std::size_t iv = vertex_index_fn(v);
 				const double cand = du + wuv;
 
 				// if db[u] + wuv ? db[v] and db[u] + wuv < B
@@ -73,7 +74,7 @@ namespace sssp {
 					if (cand < db[iv]) {
 						db[iv] = cand; 
 					}
-					// Insert / DecreaseKey: ������ ����� ����. ����� ������ ������.
+			
 					H.emplace(db[iv], v);
 				}
 			}
@@ -91,14 +92,14 @@ namespace sssp {
 		//  B' = max_{v?U0} db[v],  U = { v?U0 : db[v] < B' }
 		double Bprime = -std::numeric_limits<double>::infinity();
 		for (const Key& v : U0) {
-			const std::size_t iv = index_of(v);
+			const std::size_t iv = vertex_index_fn(v);
 			if (db[iv] > Bprime) Bprime = db[iv];
 		}
 
 		out.Bprime = Bprime;
 		out.U.reserve(U0.size());
 		for (const Key& v : U0) {
-			const std::size_t iv = index_of(v);
+			const std::size_t iv = vertex_index_fn(v);
 			if (db[iv] < Bprime) out.U.push_back(v);
 		}
 		return out;
