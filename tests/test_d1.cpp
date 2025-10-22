@@ -7,6 +7,7 @@
 #include <random>
 #include <set>
 #include <cmath>
+#include <cmath>  // for std::isinf
 
 #include "ds_common.hpp"
 #include "d1.hpp"
