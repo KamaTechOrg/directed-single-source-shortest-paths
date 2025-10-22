@@ -46,7 +46,7 @@ namespace sssp {
         const std::size_t n = adj.size();
         const std::vector<Key> S0 = S; 
 
-        auto rr = relax_k_steps<Key>(adj, db, std::move(S), B, K, vertex_index_fn);
+        auto rr = relax_k_steps<Key>(adj, db, S, B, K, vertex_index_fn);
         const auto& W = rr.W_union;
 
         if (W.size() > K * S0.size()) {
