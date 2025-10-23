@@ -31,7 +31,7 @@ void DualBlockStructure<Key>::initialize(std::size_t maxBlockSize, std::size_t g
 }
 
 template <class Key>
-DualBlockStructure<Key>::DualBlockStructure() noexcept
+DualBlockStructure<Key>::DualBlockStructure()
     : maxBlockSize_(1)              // minimal valid block size
     , globalUpperBound_(0)          // any value; D1 gets 0.0 below
     , d0_(1)

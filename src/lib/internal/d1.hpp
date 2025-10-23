@@ -54,16 +54,16 @@ private:
     // τ-key ordering: (upper bound τ, block address). Address ensures uniqueness when τ ties.
     using TauKey = std::pair<double, const void*>;
 
-    struct TauLess {
-        bool operator()(const TauKey & a, const TauKey & b) const noexcept {
-            if (a.first < b.first) return true;
-            if (b.first < a.first) return false;
-                // Use std::less for pointers to get a strict total order across unrelated objects
-                return std::less<const void*>()(a.second, b.second);
-        }
-    };
+    //struct TauLess {
+    //    bool operator()(const TauKey & a, const TauKey & b) const noexcept {
+    //        if (a.first < b.first) return true;
+    //        if (b.first < a.first) return false;
+    //            // Use std::less for pointers to get a strict total order across unrelated objects
+    //            return std::less<const void*>()(a.second, b.second);
+    //    }
+    //};
     // Tree index ordered by τ
-    std::map<TauKey, BlockIt, TauLess> tree_;
+    std::map<TauKey, BlockIt> tree_;
 
     // linked list of blocks
     BlockList blocks_;

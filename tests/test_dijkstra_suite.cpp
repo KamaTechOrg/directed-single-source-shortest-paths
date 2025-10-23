@@ -6,6 +6,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <cmath>  // for std::isinf
 
 
 using namespace lemon;

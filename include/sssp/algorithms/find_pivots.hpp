@@ -41,12 +41,12 @@ namespace sssp {
         std::vector<Key> S,
         double B,
         std::size_t K,
-        IndexOf index_of)
+        IndexOf vertex_index_fn)
     {
         const std::size_t n = adj.size();
         const std::vector<Key> S0 = S; 
 
-        auto rr = relax_k_steps<Key>(adj, db, std::move(S), B, K, index_of);
+        auto rr = relax_k_steps<Key>(adj, db, S, B, K, vertex_index_fn);
         const auto& W = rr.W_union;
 
         if (W.size() > K * S0.size()) {
@@ -54,19 +54,17 @@ namespace sssp {
         }
 
         std::vector<char> inW(n, 0), inS0(n, 0);
-        for (const Key& v : W)  inW[index_of(v)] = 1;
-        for (const Key& u : S0) inS0[index_of(u)] = 1;
+        for (const Key& v : W)  inW[vertex_index_fn(v)] = 1;
+        for (const Key& u : S0) inS0[vertex_index_fn(u)] = 1;
 
         std::vector<std::size_t> pred_idx(n, (std::size_t)-1);
         std::vector<char>        pred_set(n, 0);
 
         for (const Key& uKey : W) {
-            const std::size_t iu = index_of(uKey);
+            const std::size_t iu = vertex_index_fn(uKey);
             const double du = db[iu];
-            for (const auto& e : adj[iu]) {
-                const Key& vKey = e.first;
-                const double wuv = e.second;
-                const std::size_t iv = index_of(vKey);
+            for (const auto& [vKey, wuv] : adj[iu]) {
+                const std::size_t iv = vertex_index_fn(vKey);
                 if (!inW[iv]) continue;
 
                 const double cand = du + wuv;
@@ -82,7 +80,7 @@ namespace sssp {
         std::vector<int> indeg(n, 0);
         std::vector<std::vector<std::size_t>> children(n);
         for (const Key& vKey : W) {
-            const std::size_t iv = index_of(vKey);
+            const std::size_t iv = vertex_index_fn(vKey);
             const std::size_t iu = pred_idx[iv];
             if (iu != (std::size_t)-1 && inW[iu]) {
                 children[iu].push_back(iv);
@@ -93,7 +91,7 @@ namespace sssp {
         std::vector<Key> P;
         P.reserve(S0.size());
         for (const Key& uKey : S0) {
-            const std::size_t iu = index_of(uKey);
+            const std::size_t iu = vertex_index_fn(uKey);
             if (inW[iu] && indeg[iu] == 0 && detail::subtree_at_least_K(iu, children, K)) {
                 P.push_back(uKey);
             }
