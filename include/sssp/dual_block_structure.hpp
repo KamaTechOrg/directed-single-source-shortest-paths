@@ -6,11 +6,10 @@
 #include <cassert>
 
 
-#include "src/lib/internal/ds_common.hpp" 
-
-template <class Key> class D0;
-template <class Key> class D1;
-template <class Key> class Hash;
+#include "ds_common.hpp"
+#include "d0.hpp"
+#include "d1.hpp"
+#include "hash.hpp"
 
 template <class Key>
 class DualBlockStructure {
@@ -22,12 +21,15 @@ public:
     DualBlockStructure(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
     void initialize(std::size_t maxBlockSize, std::size_t globalUpperBound, std::size_t expected_keys = 0);
 
+    DualBlockStructure();
+    bool empty() const noexcept;
+
     std::size_t maxBlockSize() const noexcept { return maxBlockSize_; }
     std::size_t globalUpperBound() const noexcept { return globalUpperBound_; }
 
     void batch_prepend(NodeList&& items);
 
-    std::pair<NodeList, double> pull();
+    std::pair<std::vector<Key>, double> pull();
 
     bool insert(const Key& key, double value);
 

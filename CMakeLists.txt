@@ -8,21 +8,49 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 
-# === LEMON ===
+
 set(LEMON_ENABLE_GLPK   OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CPLEX  OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CLP    OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_CBC    OFF CACHE BOOL "" FORCE)
 set(LEMON_ENABLE_SOPLEX OFF CACHE BOOL "" FORCE)
 
+
+
 FetchContent_Declare(lemon
-  URL https://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.zip
+  GIT_REPOSITORY https://github.com/alex-176/lemon.git
+  GIT_TAG        main
+  GIT_SHALLOW    TRUE
+  GIT_PROGRESS   TRUE
 )
 FetchContent_MakeAvailable(lemon)
 
-add_subdirectory(src)
+
+
+
+include(FetchContent)
+set(BENCHMARK_ENABLE_TESTING        OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS    OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_EXAMPLES       OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_WERROR         OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(benchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  GIT_TAG        v1.8.3
+  GIT_SHALLOW    TRUE
+  GIT_PROGRESS   TRUE
+)
+FetchContent_MakeAvailable(benchmark)
+
 
 add_subdirectory(tools/rb2lemon)
+
+add_subdirectory(src)
+
+add_subdirectory(benchmarks)
+
+
 
 enable_testing()
 set(CTEST_OUTPUT_ON_FAILURE ON)

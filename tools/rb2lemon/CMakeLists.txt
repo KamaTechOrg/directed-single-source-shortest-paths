@@ -8,7 +8,8 @@ target_link_libraries(rbconv PUBLIC lemon)
 target_include_directories(rbconv
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${lemon_SOURCE_DIR}     
+    ${lemon_SOURCE_DIR}   
+    ${lemon_SOURCE_DIR}/include
     ${lemon_BINARY_DIR}
 )
 target_compile_features(rbconv PUBLIC cxx_std_17)

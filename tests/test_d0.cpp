@@ -1,4 +1,6 @@
 // tests/test_d0.cpp
+#include <cmath>  // for std::isinf
+
 #include <gtest/gtest.h>
 #include <list>
 #include <vector>
