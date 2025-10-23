@@ -19,7 +19,6 @@ TestResults/
 *.trx
 *.coverage
 *.coveragexml
-_deps/
 
 # IDEs
 .vscode/
