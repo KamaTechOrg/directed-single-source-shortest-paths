@@ -4,6 +4,10 @@
 /CMakeFiles/
 /external/
 CMakeCache.txt
+data/
+*.lgf
+*.rb
+*.graphml
 *.obj
 *.o
 *.a
@@ -19,6 +23,7 @@ TestResults/
 *.trx
 *.coverage
 *.coveragexml
+_deps/
 
 # IDEs
 .vscode/
