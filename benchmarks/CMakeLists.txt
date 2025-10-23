@@ -61,3 +61,8 @@ if (MSVC)
   target_link_libraries(bench_bmssp PRIVATE legacy_stdio_definitions)
   target_link_libraries(bench_dijkstra PRIVATE legacy_stdio_definitions)
 endif()
+
+if (TARGET ittnotify_iface)
+  target_link_libraries(bench_compare PRIVATE ittnotify_iface)
+  target_link_libraries(bench_bmssp  PRIVATE ittnotify_iface)
+endif()
