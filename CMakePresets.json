@@ -28,18 +28,11 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-
         "BUILD_TESTING": "OFF",
-
         "LEMON_ENABLE_GLPK": "OFF",
         "LEMON_ENABLE_ILOG": "OFF",
         "LEMON_ENABLE_COIN": "OFF",
-        "LEMON_ENABLE_SOPLEX": "OFF"
-
-        /* אם יש אצלכם משתנה פרויקט כמו WITH_LEMON או SSSP_WITH_LEMON – הוסיפי גם:
-    "WITH_LEMON": "OFF",
-    "SSSP_WITH_LEMON": "OFF"
-    */
+        "LEMON_ENABLE_SOPLEX": "OFF" /* אם יש אצלכם משתנה פרויקט כמו WITH_LEMON או SSSP_WITH_LEMON – הוסיפי גם: "WITH_LEMON": "OFF", "SSSP_WITH_LEMON": "OFF" */
       }
     },
     {
@@ -47,6 +40,19 @@
       "displayName": "x64 Release",
       "inherits": "x64-debug",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "x64-relwithdebinfo",
+      "displayName": "x64 RelWithDebInfo",
+      "inherits": "x64-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BUILD_TESTING": "OFF",
+        "LEMON_ENABLE_GLPK": "OFF",
+        "LEMON_ENABLE_ILOG": "OFF",
+        "LEMON_ENABLE_COIN": "OFF",
+        "LEMON_ENABLE_SOPLEX": "OFF"
+      }
     }
   ],
   "buildPresets": [
@@ -57,6 +63,10 @@
     {
       "name": "x64-release",
       "configurePreset": "x64-release"
+    },
+    {
+      "name": "x64-relwithdebinfo",
+      "configurePreset": "x64-relwithdebinfo"
     }
   ],
   "testPresets": [
