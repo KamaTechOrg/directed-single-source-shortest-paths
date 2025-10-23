@@ -1,42 +1,63 @@
-# benchmarks/CMakeLists.txt
+cmake_minimum_required(VERSION 3.20)
 
-add_executable(bmssp_benchmark
-  ${CMAKE_CURRENT_SOURCE_DIR}/bmssp_benchmark.cpp
+# ---- BMSSP ----
+add_executable(bench_bmssp
+  bench_bmssp.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp   # חשוב! כדי לסגור unresolved externals
+)
+
+# ---- Dijkstra ----
+add_executable(bench_dijkstra
+  bench_dijkstra.cpp
+  # אם Dijkstra לא משתמש ב-dual_block_structure.cpp אפשר להסיר את השורה הבאה.
   ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp
 )
 
-add_executable(bmssp_vs_dijkstra
-  ${CMAKE_CURRENT_SOURCE_DIR}/bmssp_vs_dijkstra.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp
-)
+# C++ standard
+target_compile_features(bench_bmssp PRIVATE cxx_std_17)
+target_compile_features(bench_dijkstra PRIVATE cxx_std_17)
 
-# include paths
-target_include_directories(bmssp_benchmark PRIVATE
+# include paths (התאימי אם יש הבדלים אצלך)
+target_include_directories(bench_bmssp PRIVATE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src/lib
   ${CMAKE_SOURCE_DIR}/src/lib/internal
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
 )
-target_include_directories(bmssp_vs_dijkstra PRIVATE
+target_include_directories(bench_dijkstra PRIVATE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/src/lib
   ${CMAKE_SOURCE_DIR}/src/lib/internal
   ${CMAKE_SOURCE_DIR}/tools/rb2lemon
 )
 
-# לינקים
-target_link_libraries(bmssp_benchmark PRIVATE
-  rbconv
-  benchmark::benchmark_main
-  lemon
+add_executable(bench_compare
+  ${CMAKE_CURRENT_SOURCE_DIR}/bench_compare.cpp
 )
-target_link_libraries(bmssp_vs_dijkstra PRIVATE
+target_include_directories(bench_compare PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src/lib
+  ${CMAKE_SOURCE_DIR}/src/lib/internal
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon
+)
+target_link_libraries(bench_compare PRIVATE
+  sssp_lib
   rbconv
-  benchmark::benchmark_main
   lemon
 )
 
+# קישורים לספריות שכבר יש לך בפרויקט
+target_link_libraries(bench_bmssp PRIVATE
+  rbconv
+  lemon
+)
+target_link_libraries(bench_dijkstra PRIVATE
+  rbconv
+  lemon
+)
+
+# לרוב אין צורך, אבל אם MSVC מתבכיין על printf/stdio במצבים מסוימים:
 if (MSVC)
-  target_link_libraries(bmssp_benchmark PRIVATE legacy_stdio_definitions)
-  target_link_libraries(bmssp_vs_dijkstra PRIVATE legacy_stdio_definitions)
+  target_link_libraries(bench_bmssp PRIVATE legacy_stdio_definitions)
+  target_link_libraries(bench_dijkstra PRIVATE legacy_stdio_definitions)
 endif()
