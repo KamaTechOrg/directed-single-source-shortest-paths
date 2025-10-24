@@ -83,8 +83,19 @@
 #include <lemon/lgf_reader.h>
 #include <lemon/dijkstra.h>
 
+
+#ifdef HAS_ITT
+#include <ittnotify.h>
+#define ITT_RESUME() __itt_resume()
+#define ITT_PAUSE()  __itt_pause()
+#else
+#define ITT_RESUME() ((void)0)
+#define ITT_PAUSE()  ((void)0)
+#endif
+
+
 using Digraph = lemon::ListDigraph;
-using Clock = std::chrono::high_resolution_clock;
+using Clock = std::chrono::steady_clock;
 
 int main(int argc, char** argv) {
     // לכבות רעשים בזמן המדידה
@@ -92,7 +103,7 @@ int main(int argc, char** argv) {
 
     // פרמטרים
     std::string rb_path = (argc > 1 ? argv[1]
-        : "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\patents_main.rb");
+        : "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\webbase-1M.rb");
     std::size_t N = (argc > 2 ? std::stoul(argv[2]) : 50);
 
     // מסלולי קבצים
@@ -163,11 +174,14 @@ int main(int argc, char** argv) {
 
     // --- מדידה נקייה של הליבה בלבד ---
     std::vector<double> times; times.reserve(N);
+    ITT_RESUME();
     for (int s : sources) {
         auto it = node_by_id.find(idx2id[s]);
         if (it == node_by_id.end()) continue;
         times.push_back(run_once(it->second));
     }
+    ITT_PAUSE();
+
 
     auto st = stats_of(times);
 

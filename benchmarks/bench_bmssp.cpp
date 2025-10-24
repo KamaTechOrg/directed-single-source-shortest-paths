@@ -112,14 +112,14 @@
 
 int main(int argc, char** argv) {
     // שקט בלוגים
-    logsys::current_level() = logsys::Level::INFO;
+    logsys::current_level() = logsys::Level::ERROR;
 
     // עצירה יזומה של האיסוף עד שנגיע לאלגוריתם
     ITT_PAUSE();
 
     // קלט: קובץ RB ו-N מקורות
     const std::string rb_path = (argc > 1 ? argv[1]
-        : "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\patents_main.rb");
+        : "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\webbase-1M.rb");
     const std::size_t N = (argc > 2 ? std::stoul(argv[2]) : 50);
 
     // המרה RB->LGF (מחוץ למדידה)
@@ -193,6 +193,7 @@ int main(int argc, char** argv) {
     ITT_PAUSE();
     // <<< סוף המדידה >>>
 
+    logsys::current_level() = logsys::Level::INFO;
     const auto st = stats_of(times);
     LOG_INFO() << "[BMSSP] N=" << times.size()
         << " mean=" << st.mean
