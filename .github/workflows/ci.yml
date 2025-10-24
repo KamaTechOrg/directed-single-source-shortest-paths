@@ -95,117 +95,118 @@
 
 
 
-name: CI (tests only)
+    name: CI (tests only)
 
-on:
-  push:
-    branches: ['**']
-  pull_request:
-    branches: [ main ]
+    on:
+      push:
+        branches: ['**']
+      pull_request:
+        branches: [ main ]
 
-permissions:
-  contents: read
+    permissions:
+      contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true
 
-jobs:
-  build-and-test:
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 60
+    jobs:
+      build-and-test:
+        runs-on: [self-hosted, Linux, X64]
+        timeout-minutes: 60
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+            with:
+              submodules: 'false'   
+              fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+          - name: Setup Python
+            uses: actions/setup-python@v5
+            with:
+              python-version: '3.x'
 
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v5
+          - name: Install Ninja
+            uses: seanmiddleditch/gha-setup-ninja@v5
 
-      # (Optional) ccache + cache
-      - name: Install ccache
-        run: |
-          set -eo pipefail
-          which ccache || sudo apt-get update && sudo apt-get install -y ccache
-          ccache --version || true
-      - name: Restore ccache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.hpp', '**/*.h', '**/*.cpp') }}
-          restore-keys: |
-            ccache-${{ runner.os }}-
+          # (Optional) ccache + cache
+          - name: Install ccache
+            run: |
+              set -eo pipefail
+              which ccache || sudo apt-get update && sudo apt-get install -y ccache
+              ccache --version || true
+          - name: Restore ccache
+            uses: actions/cache@v4
+            with:
+              path: ~/.cache/ccache
+              key: ccache-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.hpp', '**/*.h', '**/*.cpp') }}
+              restore-keys: |
+                ccache-${{ runner.os }}-
 
-      - name: Ensure user pip only (no cmake)
-        run: |
-          set -eo pipefail
-          python3 -m pip uninstall -y cmake || true
-          python3 -m pip install --user --upgrade pip
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          - name: Ensure user pip only (no cmake)
+            run: |
+              set -eo pipefail
+              python3 -m pip uninstall -y cmake || true
+              python3 -m pip install --user --upgrade pip
+              echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Show toolchain
-        run: |
-          set -eo pipefail
-          which cmake || true; cmake --version || true
-          which ninja || true; ninja --version || true
-          which gcc || true; gcc --version || true
-          which clang || true; clang --version || true
-          which ccache || true; ccache --version || true
+          - name: Show toolchain
+            run: |
+              set -eo pipefail
+              which cmake || true; cmake --version || true
+              which ninja || true; ninja --version || true
+              which gcc || true; gcc --version || true
+              which clang || true; clang --version || true
+              which ccache || true; ccache --version || true
 
-      - name: Configure (Linux)
-        env:
-          CC: gcc
-          CXX: g++
-        run: |
-          set -eo pipefail
-          mkdir -p build
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DDOWNLOAD_EXTRACT_TIMESTAMP=TRUE \
-            -DBUILD_TESTING=ON \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache | tee build/configure.log
-          test ${PIPESTATUS[0]} -eq 0
+          - name: Configure (Linux)
+            env:
+              CC: gcc
+              CXX: g++
+            run: |
+              set -eo pipefail
+              mkdir -p build
+              cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DDOWNLOAD_EXTRACT_TIMESTAMP=TRUE \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache | tee build/configure.log
+              test ${PIPESTATUS[0]} -eq 0
 
-      - name: Build
-        run: |
-          set -eo pipefail
-          cmake --build build --config Release -- -k 0 | tee build/build.log
-          test ${PIPESTATUS[0]} -eq 0
+          - name: Build
+            run: |
+              set -eo pipefail
+              cmake --build build --config Release -- -k 0 | tee build/build.log
+              test ${PIPESTATUS[0]} -eq 0
 
-      - name: List tests (no run)
-        run: |
-          set -eo pipefail
-          ctest --test-dir build -N | tee build/ctest-discover.log
-          tests=$(ctest --test-dir build -N | awk '/Total Tests:/ {print $3}')
-          if [ -z "$tests" ] || [ "$tests" -eq 0 ]; then
-            echo "No tests discovered. Failing the build."
-            exit 1
-          fi
+          - name: List tests (no run)
+            run: |
+              set -eo pipefail
+              ctest --test-dir build -N | tee build/ctest-discover.log
+              tests=$(ctest --test-dir build -N | awk '/Total Tests:/ {print $3}')
+              if [ -z "$tests" ] || [ "$tests" -eq 0 ]; then
+                echo "No tests discovered. Failing the build."
+                exit 1
+              fi
 
-      - name: Test (ctest)
-        run: |
-          set -eo pipefail
-          ctest --test-dir build -C Release --output-on-failure --no-tests=error | tee build/ctest.log
-          test ${PIPESTATUS[0]} -eq 0
+          - name: Test (ctest)
+            run: |
+              set -eo pipefail
+              ctest --test-dir build -C Release --output-on-failure --no-tests=error | tee build/ctest.log
+              test ${PIPESTATUS[0]} -eq 0
 
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs-linux-self-hosted
-          path: |
-            build/Testing/**/*.xml
-            build/CMakeFiles/CMakeOutput.log
-            build/CMakeFiles/CMakeError.log
-            build/configure.log
-            build/build.log
-            build/ctest-discover.log
-            build/ctest.log
-          if-no-files-found: ignore
+          - name: Upload logs
+            if: always()
+            uses: actions/upload-artifact@v4
+            with:
+              name: build-logs-linux-self-hosted
+              path: |
+                build/Testing/**/*.xml
+                build/CMakeFiles/CMakeOutput.log
+                build/CMakeFiles/CMakeError.log
+                build/configure.log
+                build/build.log
+                build/ctest-discover.log
+                build/ctest.log
+              if-no-files-found: ignore
