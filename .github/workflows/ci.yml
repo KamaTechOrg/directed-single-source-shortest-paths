@@ -122,10 +122,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive     # חשוב! מריץ sync+update לכל הסאבמודולים
-          fetch-depth: 0
-          # clean הוסר כדי לא לגעת ב-submodule "יתום" ולקרוס
-          # clean: true
+          submodules: recursive     # חשוב: מטפל בסאבמודולים
+          fetch-depth: 0            # שומר היסטוריה (נוח ל-ctest/דוחות)
+          # clean: true             # להסיר! זה גרם לשגיאה
 
       - name: Setup Python
         uses: actions/setup-python@v5
