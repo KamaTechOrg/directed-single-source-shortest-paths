@@ -76,6 +76,8 @@
 
 
 
+
+//מדידת זמן בפרופילינג אמיתית יותר ללא זמן המרת הגרף
 #include "bench_common.hpp"
 #include <filesystem>
 
@@ -103,7 +105,8 @@ int main(int argc, char** argv) {
 
     // פרמטרים
     std::string rb_path = (argc > 1 ? argv[1]
-        : "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\webbase-1M.rb");
+        : "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\patents_main.rb");
+        //: "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\webbase-1M.rb");
     std::size_t N = (argc > 2 ? std::stoul(argv[2]) : 50);
 
     // מסלולי קבצים
