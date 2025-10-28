@@ -188,6 +188,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DENABLE_ITT=OFF
             2>&1 | tee build/configure.log
           test ${PIPESTATUS[0]} -eq 0
 
