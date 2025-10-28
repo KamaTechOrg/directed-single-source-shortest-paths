@@ -119,12 +119,22 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 2
 
     steps:
+      # ---- Checkout: ללא סאבמודולים וללא clean כדי לא לגעת ב-submodule "יתום"
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive     # חשוב: מטפל בסאבמודולים
-          fetch-depth: 0            # שומר היסטוריה (נוח ל-ctest/דוחות)
-          # clean: true             # להסיר! זה גרם לשגיאה
+          submodules: false
+          fetch-depth: 0
+          clean: false
+
+      # ---- Guard: מחיקה רכה של מטא-דאטה ישנה של הסאבמודול אם קיימת
+      - name: Scrub orphan submodule metadata (lemon-src)
+        run: |
+          set -eo pipefail
+          test -d .git/modules/_deps/lemon-src && rm -rf .git/modules/_deps/lemon-src || true
+          if test -f .gitmodules && grep -q '_deps/lemon-src' .gitmodules; then
+            git config -f .gitmodules --remove-section submodule._deps/lemon-src || true
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
