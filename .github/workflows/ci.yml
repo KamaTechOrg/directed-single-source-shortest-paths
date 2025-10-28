@@ -95,7 +95,7 @@
 
 
 
- name: CI (tests only)
+name: CI (tests only)
 
 on:
   push:
@@ -116,7 +116,6 @@ jobs:
     timeout-minutes: 60
 
     env:
-      # הגב לתועלת על שרת חלש; ניתן להגדיל לפי משאבים
       CMAKE_BUILD_PARALLEL_LEVEL: 2
 
     steps:
@@ -135,7 +134,6 @@ jobs:
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@v5
 
-      # (Optional) ccache + cache
       - name: Install ccache
         run: |
           set -eo pipefail
@@ -186,7 +184,6 @@ jobs:
       - name: Build
         run: |
           set -eo pipefail
-          # -v לפירוט, -k0 לא לעצור בבאצ'ים מקבילים
           cmake --build build --config Release -- -v -k 0 2>&1 | tee build/build.log
           test ${PIPESTATUS[0]} -eq 0
 
@@ -203,7 +200,6 @@ jobs:
       - name: Test (ctest)
         run: |
           set -eo pipefail
-          # -j מקבילי לפי מספר ליבות
           ctest --test-dir build -C Release --output-on-failure --no-tests=error -j "$(nproc)" 2>&1 | tee build/ctest.log
           test ${PIPESTATUS[0]} -eq 0
 
