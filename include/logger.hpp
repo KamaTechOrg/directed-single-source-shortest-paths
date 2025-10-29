@@ -17,8 +17,14 @@ namespace logsys {
         auto now = system_clock::now();
         auto t = system_clock::to_time_t(now);
         auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
-        std::ostringstream o;
-        o << std::put_time(std::localtime(&t), "%H:%M:%S")
+        std::tm tm_buf{};
+        #if defined(_WIN32) || defined(_WIN64)
+           +localtime_s(&tm_buf, &t);     // בטוח בחלונות
+        #else
+           + localtime_r(&t, &tm_buf);     // בטוח ב-POSIX (לינוקס/מק)
+        #endif
+            std::ostringstream o;
+        o << std::put_time(&tm_buf, "%H:%M:%S")
             << '.' << std::setw(3) << std::setfill('0') << ms.count();
         return o.str();
     }
