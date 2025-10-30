@@ -6,6 +6,8 @@
 #include <lemon/lgf_reader.h>
 #include <lemon/dijkstra.h>
 
+#include "config_paths.hpp"
+
 
 #ifdef HAS_ITT
 #include <ittnotify.h>
@@ -20,15 +22,26 @@
 using Digraph = lemon::ListDigraph;
 using Clock = std::chrono::steady_clock;
 
+
+// ---- CLI helper (לקחת פרמטרים מהשורה) ----
+static std::string cli_get_arg(int argc, char** argv, const std::string& keyEq) {
+    for (int i = 1; i < argc; ++i) {
+        std::string s = argv[i];
+        if (s.rfind(keyEq, 0) == 0)
+            return s.substr(keyEq.size());
+    }
+    return {};
+}
+
 int main(int argc, char** argv) {
     // לכבות רעשים בזמן המדידה
     logsys::current_level() = logsys::Level::ERROR;
 
     // פרמטרים
-    /*const std::string rb_path = (argc > 1)
-        ? argv[1]
-        : "data/webbase-1M.rb";*/
-    const std::string rb_path = "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\webbase-1M.rb";
+    std::string rb_path = cli_get_arg(argc, argv, "--rb=");
+    if (rb_path.empty()) {
+        rb_path = std::string(SSSP_DEFAULT_RB);
+    }
 
     std::size_t N = (argc > 2 ? std::stoul(argv[2]) : 50);
 

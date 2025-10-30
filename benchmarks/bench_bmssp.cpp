@@ -10,6 +10,9 @@
 #include <fstream>
 #include <random>
 
+#include "config_paths.hpp"
+
+
 // ----- ITT helpers -----
 #if HAS_ITT
 #include <ittnotify.h>
@@ -75,10 +78,10 @@ int main(int argc, char** argv) {
     ITT_PAUSE();
 
     // קלט: קובץ RB ו-N מקורות
-    /*const std::string rb_path = (argc > 1)
-        ? argv[1]
-        : "data/webbase-1M.rb";*/
-    const std::string rb_path = "C:\\Users\\user1\\Desktop\\directed-single-source-shortest-paths\\data\\webbase-1M.rb";
+    std::string rb_path = cli_get_arg(argc, argv, "--rb=");
+    if (rb_path.empty()) {
+        rb_path = std::string(SSSP_DEFAULT_RB);
+    }
 
     const std::size_t N = (argc > 2 ? std::stoul(argv[2]) : 50);
 
