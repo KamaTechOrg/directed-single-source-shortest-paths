@@ -4,7 +4,8 @@
 /CMakeFiles/
 /external/
 CMakeCache.txt
-data/
+data/*
+!data/patents_main.rb
 *.lgf
 *.rb
 *.graphml
