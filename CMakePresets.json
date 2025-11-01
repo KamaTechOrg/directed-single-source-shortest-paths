@@ -33,6 +33,9 @@
         "LEMON_ENABLE_ILOG": "OFF",
         "LEMON_ENABLE_COIN": "OFF",
         "LEMON_ENABLE_SOPLEX": "OFF" /* אם יש אצלכם משתנה פרויקט כמו WITH_LEMON או SSSP_WITH_LEMON – הוסיפי גם: "WITH_LEMON": "OFF", "SSSP_WITH_LEMON": "OFF" */
+      },
+      "environment": {
+        "SSSP_RB_PATH": "${sourceDir}/data/patents_main.rb"
       }
     },
     {
@@ -52,6 +55,9 @@
         "LEMON_ENABLE_ILOG": "OFF",
         "LEMON_ENABLE_COIN": "OFF",
         "LEMON_ENABLE_SOPLEX": "OFF"
+      },
+      "environment": {
+        "SSSP_RB_PATH": "${sourceDir}/data/patents_main.rb"
       }
     }
   ],
