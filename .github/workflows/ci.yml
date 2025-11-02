@@ -115,11 +115,26 @@ jobs:
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 60
 
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
+
     steps:
+      # ---- Checkout: ללא סאבמודולים וללא clean כדי לא לגעת ב-submodule "יתום"
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
+          fetch-depth: 0
+          clean: false
+
+      # ---- Guard: מחיקה רכה של מטא-דאטה ישנה של הסאבמודול אם קיימת
+      - name: Scrub orphan submodule metadata (lemon-src)
+        run: |
+          set -eo pipefail
+          test -d .git/modules/_deps/lemon-src && rm -rf .git/modules/_deps/lemon-src || true
+          if test -f .gitmodules && grep -q '_deps/lemon-src' .gitmodules; then
+            git config -f .gitmodules --remove-section submodule._deps/lemon-src || true
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -129,12 +144,12 @@ jobs:
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@v5
 
-      # (Optional) ccache + cache
       - name: Install ccache
         run: |
           set -eo pipefail
-          which ccache || sudo apt-get update && sudo apt-get install -y ccache
+          which ccache || { sudo apt-get update && sudo apt-get install -y ccache; }
           ccache --version || true
+
       - name: Restore ccache
         uses: actions/cache@v4
         with:
@@ -166,23 +181,27 @@ jobs:
         run: |
           set -eo pipefail
           mkdir -p build
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DDOWNLOAD_EXTRACT_TIMESTAMP=TRUE \
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=ON \
+            -DDOWNLOAD_EXTRACT_TIMESTAMP=TRUE \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache | tee build/configure.log
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DENABLE_ITT=OFF
+            2>&1 | tee build/configure.log
           test ${PIPESTATUS[0]} -eq 0
 
       - name: Build
         run: |
           set -eo pipefail
-          cmake --build build --config Release -- -k 0 | tee build/build.log
+          cmake --build build --config Release -- -v -k 0 2>&1 | tee build/build.log
           test ${PIPESTATUS[0]} -eq 0
 
       - name: List tests (no run)
         run: |
           set -eo pipefail
-          ctest --test-dir build -N | tee build/ctest-discover.log
+          ctest --test-dir build -N 2>&1 | tee build/ctest-discover.log
           tests=$(ctest --test-dir build -N | awk '/Total Tests:/ {print $3}')
           if [ -z "$tests" ] || [ "$tests" -eq 0 ]; then
             echo "No tests discovered. Failing the build."
@@ -192,7 +211,7 @@ jobs:
       - name: Test (ctest)
         run: |
           set -eo pipefail
-          ctest --test-dir build -C Release --output-on-failure --no-tests=error | tee build/ctest.log
+          ctest --test-dir build -C Release --output-on-failure --no-tests=error -j "$(nproc)" 2>&1 | tee build/ctest.log
           test ${PIPESTATUS[0]} -eq 0
 
       - name: Upload logs
@@ -208,4 +227,5 @@ jobs:
             build/build.log
             build/ctest-discover.log
             build/ctest.log
+            build/compile_commands.json
           if-no-files-found: ignore

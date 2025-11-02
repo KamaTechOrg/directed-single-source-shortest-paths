@@ -5,6 +5,38 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# --- ITT (VTune) ---
+option(USE_ITT "Enable VTune ITT API markers" ON)
+
+if (USE_ITT)
+  # include
+  find_path(ITT_INCLUDE_DIR ittnotify.h
+    HINTS
+      "$ENV{VTUNE_PROFILER_2025_DIR}/include"
+      "$ENV{VTUNE_PROFILER_DIR}/include"
+      "$ENV{ONEAPI_ROOT}/vtune/latest/include"
+      "C:/Program Files (x86)/Intel/oneAPI/vtune/latest/include"
+  )
+  # lib (ב־Windows בדרך כלל lib64)
+  find_library(ITT_LIB ittnotify
+    HINTS
+      "$ENV{VTUNE_PROFILER_2025_DIR}/lib64"
+      "$ENV{VTUNE_PROFILER_DIR}/lib64"
+      "$ENV{ONEAPI_ROOT}/vtune/latest/lib64"
+      "C:/Program Files (x86)/Intel/oneAPI/vtune/latest/lib64"
+  )
+
+  if (ITT_INCLUDE_DIR AND ITT_LIB)
+    add_library(ittnotify_iface INTERFACE)
+    target_include_directories(ittnotify_iface INTERFACE ${ITT_INCLUDE_DIR})
+    target_link_libraries(ittnotify_iface INTERFACE ${ITT_LIB})
+    target_compile_definitions(ittnotify_iface INTERFACE HAS_ITT=1)
+    message(STATUS "ITT enabled: inc=${ITT_INCLUDE_DIR}, lib=${ITT_LIB}")
+  else()
+    message(WARNING "ITT not found; building without ITT markers")
+  endif()
+endif()
+
 
 include(FetchContent)
 
