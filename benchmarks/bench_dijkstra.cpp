@@ -9,7 +9,7 @@
 #include <lemon/lgf_reader.h>
 #include <lemon/dijkstra.h>
 
-#ifdef HAS_ITT
+#if HAS_ITT
 #include <ittnotify.h>
 #define ITT_RESUME() __itt_resume()
 #define ITT_PAUSE()  __itt_pause()

@@ -46,7 +46,6 @@ static void save_sources_file(const std::string& path, const std::vector<int>& s
     for (int v : srcs) out << v << "\n";
 }
 
-// בונה רשימה דטרמיניסטית: תחילה top-by-outdeg ואז השלמה לפי אינדקס
 static std::vector<int> make_deterministic_sources(const Adj& adj, std::size_t N) {
     const auto n = adj.size();
     std::vector<int> sources; sources.reserve(N);

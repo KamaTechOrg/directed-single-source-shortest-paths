@@ -18,21 +18,39 @@ add_executable(bench_compare
   ${CMAKE_SOURCE_DIR}/src/lib/dual_block_structure.cpp
 )
 
-# C++17 + includes + קישור בסיסי
-foreach(tgt IN ITEMS bench_bmssp bench_dijkstra bench_compare)
-  target_compile_features(${tgt} PRIVATE cxx_std_17)
-  target_include_directories(${tgt} PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src/lib
-    ${CMAKE_SOURCE_DIR}/src/lib/internal
-    ${CMAKE_SOURCE_DIR}/tools/rb2lemon
-  )
-  target_link_libraries(${tgt} PRIVATE rbconv lemon)
-endforeach()
+# נתיבי include משותפים
+set(BENCH_COMMON_INCLUDES
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src/lib
+  ${CMAKE_SOURCE_DIR}/src/lib/internal
+  ${CMAKE_SOURCE_DIR}/tools/rb2lemon
+)
+
+# ספריות קישור משותפות
+set(BENCH_COMMON_LIBS
+  rbconv
+  lemon
+)
+
+# ---- הגדרות פר-טארגט (ללא foreach) ----
+# C++17
+target_compile_features(bench_bmssp    PRIVATE cxx_std_17)
+target_compile_features(bench_dijkstra PRIVATE cxx_std_17)
+target_compile_features(bench_compare  PRIVATE cxx_std_17)
+
+# include paths
+target_include_directories(bench_bmssp    PRIVATE ${BENCH_COMMON_INCLUDES})
+target_include_directories(bench_dijkstra PRIVATE ${BENCH_COMMON_INCLUDES})
+target_include_directories(bench_compare  PRIVATE ${BENCH_COMMON_INCLUDES})
+
+# link libraries
+target_link_libraries(bench_bmssp    PRIVATE ${BENCH_COMMON_LIBS})
+target_link_libraries(bench_dijkstra PRIVATE ${BENCH_COMMON_LIBS})
+target_link_libraries(bench_compare  PRIVATE ${BENCH_COMMON_LIBS})
 
 # Windows legacy_stdio_definitions (אם צריך)
 if (MSVC)
-  target_link_libraries(bench_bmssp   PRIVATE legacy_stdio_definitions)
+  target_link_libraries(bench_bmssp    PRIVATE legacy_stdio_definitions)
   target_link_libraries(bench_dijkstra PRIVATE legacy_stdio_definitions)
   target_link_libraries(bench_compare  PRIVATE legacy_stdio_definitions)
 endif()
@@ -41,7 +59,6 @@ endif()
 option(ENABLE_ITT "Enable Intel ITT (pause/resume) if available" ON)
 
 if (ENABLE_ITT)
-  # דוגמה למשתנה סביבה נפוץ: VTUNE_PROFILER_2025_DIR=C:\Program Files (x86)\Intel\oneAPI\vtune\2025.6
   set(_VTUNE_HINT "$ENV{VTUNE_PROFILER_2025_DIR}")
 
   set(_ITT_INCLUDE_HINTS
@@ -53,7 +70,7 @@ if (ENABLE_ITT)
       "${_VTUNE_HINT}/lib64"
       "C:/Program Files (x86)/Intel/oneAPI/vtune/latest/lib64"
       "/opt/intel/oneapi/vtune/latest/lib64"
-      "C:/Program Files (x86)/Intel/oneAPI/vtune/latest/lib"  # לעיתים ב-Windows
+      "C:/Program Files (x86)/Intel/oneAPI/vtune/latest/lib"
   )
 
   find_path(ITT_INCLUDE_DIR ittnotify.h HINTS ${_ITT_INCLUDE_HINTS})
@@ -62,21 +79,23 @@ if (ENABLE_ITT)
   if (ITT_INCLUDE_DIR AND ITT_LIBRARY)
     message(STATUS "ITT found: ${ITT_INCLUDE_DIR}, ${ITT_LIBRARY}")
 
-    # הגנה מפני הגדרה כפולה אם ה-CMake הזה נטען יותר מפעם אחת/מקובץ-אב
     if (NOT TARGET ittnotify_iface)
       add_library(ittnotify_iface INTERFACE)
       target_include_directories(ittnotify_iface INTERFACE "${ITT_INCLUDE_DIR}")
       target_link_libraries(ittnotify_iface INTERFACE "${ITT_LIBRARY}")
     endif()
 
-    foreach(tgt IN ITEMS bench_bmssp bench_dijkstra bench_compare)
-      target_compile_definitions(${tgt} PRIVATE HAS_ITT=1)
-      target_link_libraries(${tgt} PRIVATE ittnotify_iface)
-    endforeach()
+    target_compile_definitions(bench_bmssp    PRIVATE HAS_ITT=1)
+    target_compile_definitions(bench_dijkstra PRIVATE HAS_ITT=1)
+    target_compile_definitions(bench_compare  PRIVATE HAS_ITT=1)
+
+    target_link_libraries(bench_bmssp    PRIVATE ittnotify_iface)
+    target_link_libraries(bench_dijkstra PRIVATE ittnotify_iface)
+    target_link_libraries(bench_compare  PRIVATE ittnotify_iface)
   else()
     message(WARNING "ITT not found. Building without ITT.")
-    foreach(tgt IN ITEMS bench_bmssp bench_dijkstra bench_compare)
-      target_compile_definitions(${tgt} PRIVATE HAS_ITT=0)
-    endforeach()
+    target_compile_definitions(bench_bmssp    PRIVATE HAS_ITT=0)
+    target_compile_definitions(bench_dijkstra PRIVATE HAS_ITT=0)
+    target_compile_definitions(bench_compare  PRIVATE HAS_ITT=0)
   endif()
 endif()
