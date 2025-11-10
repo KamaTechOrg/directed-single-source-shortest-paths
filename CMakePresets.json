@@ -57,7 +57,9 @@
         "LEMON_ENABLE_SOPLEX": "OFF"
       },
       "environment": {
-        "SSSP_RB_PATH": "${sourceDir}/data/patents_main.rb"
+        //"SSSP_RB_PATH": "${sourceDir}/data/patents_main.rb"
+        "SSSP_RB_PATH": "${sourceDir}/data/in-2004.rb"
+        //"SSSP_RB_PATH": "${sourceDir}/data/eu-2005.rb"
       }
     }
   ],

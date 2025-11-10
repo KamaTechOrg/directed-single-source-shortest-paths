@@ -5,6 +5,33 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+# --- OpenMP (optional) ---
+option(SSSP_ENABLE_OPENMP "Enable OpenMP parallel relax" ON)
+
+if (SSSP_ENABLE_OPENMP)
+  find_package(OpenMP)
+endif()
+
+if (OpenMP_CXX_FOUND)
+  set(SSSP_OPENMP_AVAILABLE TRUE)
+  message(STATUS "OpenMP found: enabling parallel relax")
+else()
+  set(SSSP_OPENMP_AVAILABLE FALSE)
+  message(STATUS "OpenMP NOT found: building without parallel relax")
+endif()
+
+# helper to attach OpenMP (and define HAS_OMP) to targets
+function(sssp_enable_openmp target)
+  if (SSSP_OPENMP_AVAILABLE)
+    target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)
+    target_compile_definitions(${target} PRIVATE HAS_OMP=1)
+  else()
+    target_compile_definitions(${target} PRIVATE HAS_OMP=0)
+  endif()
+endfunction()
+
+
 # --- ITT (VTune) ---
 option(USE_ITT "Enable VTune ITT API markers" ON)
 

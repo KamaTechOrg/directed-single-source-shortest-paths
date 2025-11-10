@@ -9,6 +9,9 @@
 #include <cstdint>
 
 #include "sssp/algorithms/relax.hpp"
+#include "sssp/algorithms/relax_parallel.hpp"
+#include "sssp/algorithms/relax_parallel_light.hpp"
+#include "sssp/algorithms/relax_parallel_cas.hpp"
 #include "sssp/algorithms/types.hpp"
 
 namespace sssp {
@@ -65,7 +68,19 @@ namespace sssp {
 
         // ====== K-Relax (גרסה שלך) ======
         // הערה: מומלץ לשלב בעתיד epoch-marking בתוך relax_k_steps כדי לצמצם עלות איפוסי db.
-        auto rr = relax_k_steps<Key>(adj, db, S, B, K, vertex_index_fn);
+        //auto rr = relax_k_steps<Key>(adj, db, S, B, K, vertex_index_fn);
+
+        // חדש (מקבילי):
+        //auto rr = relax_k_steps_parallel<Key>(adj, db, S, B, K, vertex_index_fn);
+
+        //מקבילי עם שיפור
+        //auto rr = relax_k_steps_parallel_light<Key>(adj, db, S, B, K, vertex_index_fn);
+
+        //cas
+        auto rr = sssp::relax_k_steps_parallel_cas<Key>(adj, db, S, B, K, vertex_index_fn);
+
+
+
         const auto& W = rr.W_union;
 
         // אם W גדול מדי — לפי ההגדרה שלכם: חוזרים עם S0 (אין פיבוטים חדשים)
